@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant CFG as Configurator
+    participant API as API Gateway
+    participant CM as Config Manager
+    participant SAN as Sandbox Env
+    participant ADM as Admin
+    participant MD as Metadata Registry
+    participant NT as Notification Service
+
+    CFG->>API: Upload draft configuration
+    API->>CM: Store draft + validate schema
+    CM->>SAN: Run sandbox validation tests
+    SAN-->>CM: Return test results
+    CM->>MD: Record draft metadata
+    CFG->>API: Submit for approval
+    API->>ADM: Notify pending approval
+    ADM->>CM: Review and approve
+    CM->>MD: Log approval and version info
+    CM->>API: Promote to production tenants
+    API->>NT: Notify stakeholders of activation

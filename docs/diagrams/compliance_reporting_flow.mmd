@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant ADM as Admin/Auditor
+    participant API as API Gateway
+    participant MD as Metadata Registry
+    participant EXP as Export Service
+    participant ST as Secure Storage
+    participant NT as Notification Service
+
+    ADM->>API: Request compliance evidence pack
+    API->>MD: Gather lineage + audit logs
+    MD->>EXP: Provide compiled metadata
+    EXP->>ST: Store generated evidence bundle
+    EXP->>MD: Record export metadata
+    NT->>ADM: Send download link/confirmation
+    ADM->>ST: Retrieve evidence package
+    ST->>MD: Log access event

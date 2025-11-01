@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant U as Uploader
+    participant API as API Gateway
+    participant JM as Job Manager
+    participant RE as Rule Engine
+    participant RS as Report Service
+    participant MD as Metadata Registry
+    participant NT as Notification Service
+
+    U->>API: Upload dataset + metadata
+    API->>JM: Create validation job
+    JM->>MD: Record job submission
+    JM->>RE: Dispatch dataset + config version
+    RE->>MD: Log rule execution events
+    RE->>RS: Send validation results
+    RS->>MD: Store report references
+    RS->>JM: Mark job as completed
+    JM->>NT: Trigger completion notification
+    NT->>U: Send success/failure message
+    U->>API: Download detailed report (optional)
