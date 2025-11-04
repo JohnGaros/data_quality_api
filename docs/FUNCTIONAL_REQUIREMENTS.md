@@ -21,15 +21,16 @@ Out of scope for now:
 ## 4. Functional areas and requirements
 
 ### 4.1 File intake and validation (Uploader focus)
-1. System must accept Excel and CSV uploads via REST API and future UI.
-2. Uploader must see immediate confirmation that the file was received and queued.
-3. System must link each upload to the correct customer tenant and configuration version.
-4. Validation engine must run all active rules against the uploaded dataset.
+1. System must accept Excel and CSV uploads via REST API and future UI, whether provided as direct file payloads or as immutable blob references supplied after an external upload completes.
+2. Uploader must see immediate confirmation that the file (or external reference) was received and queued.
+3. System must link each upload to the correct customer tenant and configuration version, regardless of the ingestion path.
+4. Validation engine must build a profiling-driven validation context using the upload's profiling snapshot, then run all active rules inside that context.
 5. System must store the original file securely for later review or reruns.
 6. Uploader must be able to poll or receive status updates (pending, running, completed, failed).
-7. When validation finishes, system must provide pass/fail outcome plus summary counts of issues.
+7. When validation finishes, system must provide pass/fail outcome plus summary counts of issues and call out any profiling-driven threshold adjustments that influenced results.
 8. Uploader must be able to download a detailed error report highlighting failed rows and rules.
 
+*Profiling-driven example:* If profiling shows a tenant's historical null rate for `PaymentAmount` stays below 2%, the profiling-driven validation context tightens the warning threshold to 3% for the next run so sudden spikes surface as soft alerts before hard failures occur. The same profiling logic applies whether the dataset arrived through direct upload or via an external blob reference.
 ### 4.2 Rule and configuration management (Configurator focus)
 9. Configurator must be able to view the active rule library, including rule name, category, severity, and status.
 10. Configurator must upload or edit rule definitions using structured templates (Excel/JSON) through API endpoints.

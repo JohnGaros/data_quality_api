@@ -2,6 +2,7 @@ sequenceDiagram
     participant U as Uploader
     participant API as API Gateway
     participant JM as Job Manager
+    participant PF as Profiling Service
     participant RE as Rule Engine
     participant RS as Report Service
     participant MD as Metadata Registry
@@ -10,8 +11,11 @@ sequenceDiagram
     U->>API: Upload dataset + metadata
     API->>JM: Create validation job
     JM->>MD: Record job submission
+    JM->>PF: Request profiling snapshot
+    PF->>MD: Persist profiling metrics
+    PF->>RE: Provide profiling-driven validation context
     JM->>RE: Dispatch dataset + config version
-    RE->>MD: Log rule execution events
+    RE->>MD: Log rule execution events + context adjustments
     RE->>RS: Send validation results
     RS->>MD: Store report references
     RS->>JM: Mark job as completed

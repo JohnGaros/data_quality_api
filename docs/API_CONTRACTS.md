@@ -16,16 +16,21 @@
 - **Job status values:** `pending`, `running`, `succeeded`, `failed`, `cancelled`.
 - **Rule severity:** `hard` (blocks) or `soft` (warns).
 - **Identifiers:** UUID strings supplied by the platform; clients provide idempotency keys via header `X-Idempotency-Key`.
+- **Profiling context metadata:** `profiling_context_id`, `profiled_at`, and a list of dynamic threshold overrides applied during validation.
+- **Upload orchestration:** Until the organization finalises an approach, clients may either upload files directly or supply blob references gathered from an external upload service. The DQ API always expects an immutable blob URI plus integrity metadata (ETag or checksum).
 
 ## 4. Endpoint catalog
 
 ### 4.1 Upload and validation jobs (Uploader scope)
+> **Decoupled uploads:** Direct file uploads remain supported. When uploads are handled by another service, that service (or middleware) will call the placeholder `external uploads` endpoint with blob metadata so the DQ API can queue validation jobs. The choice between event, webhook, or polling triggers will be documented once decided.
+
 | Method | Path | Purpose | Notes |
 | ------ | ---- | ------- | ----- |
-| POST | `/uploads` | Submit one or more files for validation | Multipart form with `tenant_id`, optional `config_version`, file attachments. Returns `job_id`. |
-| GET | `/uploads/{job_id}` | Check job status | Includes timestamps, counts, severity breakdown, and active config version. |
-| GET | `/uploads/{job_id}/report` | Download validation report | Query `format=json\|csv`. Includes list of failed rows and rules. |
-| POST | `/uploads/{job_id}/rerun` | Revalidate with latest config | Admin or Configurator scope; creates new job linked to original. |
+| POST | `/uploads` | Submit one or more files for validation | Multipart form with `tenant_id`, optional `config_version`, file attachments. Returns `job_id` and `profiling_context_id`. |
+| POST | `/external-uploads` | Register a blob already stored in Azure Blob Storage (future) | JSON payload with `tenant_id`, `blob_uri`, `etag`, `content_type`, optional profiling overrides. Designed for event/webhook integrations once orchestration path is chosen. |
+| GET | `/uploads/{job_id}` | Check job status | Includes timestamps, counts, severity breakdown, active config version, and profiling-driven context metadata. |
+| GET | `/uploads/{job_id}/report` | Download validation report | Query `format=json\|csv`. Includes list of failed rows, rules, and profiling adjustments that impacted outcomes. |
+| POST | `/uploads/{job_id}/rerun` | Revalidate with latest config | Admin or Configurator scope; creates new job linked to original and rebuilds the profiling-driven validation context. |
 
 ### 4.2 Rule library management (Configurator scope)
 | Method | Path | Purpose | Notes |
@@ -94,6 +99,11 @@
 {
   "tenant_id": "TNT-001",
   "config_version": "cfg_2024_05_01",
+  "profiling_overrides": {
+    "PaymentAmount": {
+      "null_ratio": 0.02
+    }
+  },
   "files": [
     {
       "name": "billing.xlsx",
@@ -107,9 +117,42 @@
   "data": {
     "job_id": "job-123",
     "status": "pending",
+    "profiling_context_id": "ctx-456",
     "submitted_at": "2024-05-09T12:30:00Z"
   },
   "meta": {},
+  "errors": []
+}
+
+### 5.3 Example: POST `/external-uploads` (future)
+```json
+{
+  "tenant_id": "TNT-001",
+  "blob_uri": "https://storage.example.com/tenants/tnt-001/billing/billing_2024_09_01.csv",
+  "etag": "\"0x8DB2B3E7C5A1F42\"",
+  "content_type": "text/csv",
+  "metadata": {
+    "source_system": "ops-bridge",
+    "upload_trigger": "event_grid"
+  },
+  "profiling_overrides": {
+    "PaymentAmount": {
+      "null_ratio": 0.02
+    }
+  }
+}
+```
+```json
+{
+  "data": {
+    "job_id": "job-789",
+    "profiling_context_id": "ctx-987",
+    "status": "pending",
+    "received_via": "external_uploads"
+  },
+  "meta": {
+    "blob_uri": "https://storage.example.com/tenants/tnt-001/billing/billing_2024_09_01.csv"
+  },
   "errors": []
 }
 ```
@@ -122,6 +165,16 @@
     "tenant_id": "TNT-001",
     "status": "succeeded",
     "config_version": "cfg_2024_05_01",
+    "profiling_context_id": "ctx-456",
+    "profiling_adjustments": [
+      {
+        "field": "PaymentAmount",
+        "metric": "null_ratio",
+        "baseline": 0.02,
+        "adjusted_threshold": 0.03,
+        "impact": "warning"
+      }
+    ],
     "summary": {
       "records_checked": 12500,
       "hard_failures": 3,

@@ -23,6 +23,8 @@
 - Real-time dashboards or BI visualizations beyond exportable reports.
 - Fully automated integrations with third-party workflow systems (to be defined later).
 
+### 3.3 Pending decisions
+- Upload orchestration pattern (event-driven, webhook relay, or polling) remains under evaluation. Architecture is being documented now so the Data Quality Assessment API can accept either direct uploads or external blob references without rework.
 ## 4. Stakeholders and roles
 | Group | Representative roles | Primary interests |
 | ----- | ------------------- | ----------------- |
@@ -93,3 +95,4 @@
 - Level of automation required for compliance evidence exports (manual trigger vs. scheduled).
 - Scope of metadata access for external auditors (read-only API vs. curated reports).
 - Governance ownership model post-launch (which team maintains metadata rules and policies).
+- Selection of the external upload orchestration mechanism (event vs. webhook vs. polling) and corresponding SLAs.

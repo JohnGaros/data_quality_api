@@ -1,0 +1,25 @@
+# Sample configuration for decoupled upload orchestration.
+# The final mode (event, webhook, polling) will be chosen later; these keys show
+# how to wire settings once the decision is made.
+
+external_uploads:
+  enabled: false  # Flip to true when external upload service is live.
+  ingestion_mode: "pending"  # Accepted values will include: event, webhook, polling.
+  event_source:
+    topic_name: "dq-upload-topic"
+    subscription: "dq-api-subscriber"
+    cursor_checkpoint_container: "dq-event-checkpoints"
+  webhook:
+    url: "https://dq-api.example.com/api/v1/external-uploads"
+    auth_type: "aad-app-registration"
+    secret_name: "dq-external-upload-webhook"
+  polling:
+    interval_seconds: 300
+    container: "incoming-uploads"
+    status_blob_prefix: "ready/"
+  metadata_defaults:
+    required_headers:
+      - "x-tenant-id"
+      - "x-source-system"
+    retry_limit: 5
+    dead_letter_container: "dq-upload-deadletter"

@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant EXT as External Upload Service
+    participant ST as Azure Blob Storage
+    participant TR as Trigger Mechanism
+    participant API as DQ API (external uploads)
+    participant JM as Job Manager
+    participant RE as Rule Engine
+    participant MD as Metadata Registry
+    participant NT as Notification Service
+
+    EXT->>ST: Store file + metadata (tenant, checksum)
+    EXT-->>TR: Signal completion (event/webhook/polling pending decision)
+    TR->>API: Send blob reference (URI, etag, trigger context)
+    API->>JM: Register external upload and enqueue validation job
+    JM->>MD: Persist ingestion mode + blob lineage
+    JM->>RE: Dispatch job with blob URI
+    RE->>ST: Fetch blob content
+    RE->>MD: Record rule execution + profiling adjustments
+    RE->>NT: Publish validation outcome

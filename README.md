@@ -4,6 +4,7 @@
 - Central service that checks customer data files against shared business rules.
 - Supports multiple customers (tenants) with different file layouts.
 - Keeps full audit history so governance and compliance teams have evidence when needed.
+- Designed to handle both direct file uploads and future externalised blob uploads (event, webhook, or polling trigger still pending a final decision).
 
 ## How the repo is organised
 - `docs/` — plain-language specs and guides for product, security, and operations.
@@ -22,4 +23,4 @@
 1. Read the Business Requirements Document (`docs/BRD.md`) for the big picture.
 2. Review functional and non-functional requirements to understand what must be built.
 3. Follow the docs in `infra/` and `scripts/` when you are ready to run or deploy the service.
-
+4. If you are evaluating decoupled uploads, review `configs/external_upload.example.yaml` and the notes in `docs/ARCHITECTURE_FILE_STRUCTURE.md` for integration guidance.

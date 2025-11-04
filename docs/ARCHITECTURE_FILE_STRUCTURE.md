@@ -87,13 +87,14 @@ dq_core/
 ```
 
 - **models/**: Pydantic data models for rules, logical fields, mappings, and configs.
-- **engine/**: Core logic for evaluating rules and building derived fields.
+- **engine/**: Core logic for evaluating rules, generating profiling-driven validation contexts, and building derived fields.
 - **report/**: Classes and utilities for structuring and exporting validation reports.
 
 **Example Responsibilities:**
 
-- `rule_engine.py`: Executes all active rules for a given customer and dataset.
+- `rule_engine.py`: Builds the profiling-driven validation context for each job and executes all active rules for a given customer and dataset.
 - `evaluator.py`: Safely computes arithmetic and logical expressions (cross-file support).
+- `helpers.py`: Pulls profiling summaries and injects them into the profiling-driven validation context before rule evaluation.
 - `validation_report.py`: Defines Pydantic models for report serialization.
 - `exporters.py`: Exports results as JSON, CSV, or Power BI feed.
 
@@ -107,6 +108,7 @@ dq_core/
 dq_api/
 ├── routes/
 │   ├── uploads.py
+│   ├── external_uploads.py   # Future: accepts blob references from external orchestrators
 │   ├── validation.py
 │   ├── rules.py
 │   ├── tenants.py
@@ -115,7 +117,8 @@ dq_api/
 ├── services/
 │   ├── job_manager.py
 │   ├── report_service.py
-│   └── notification_service.py
+│   ├── notification_service.py
+│   └── external_trigger_service.py  # Future: coordinates decoupled upload triggers
 ├── dependencies.py
 ├── schemas.py
 ├── middlewares.py
@@ -123,8 +126,8 @@ dq_api/
 └── app_factory.py
 ```
 
-- **routes/**: HTTP endpoints grouped by functionality and user role.
-- **services/**: Business logic for async jobs, report access, and notifications.
+- **routes/**: HTTP endpoints grouped by functionality and user role. `external_uploads.py` is a placeholder until the organisation finalises how external blob references will enter the system.
+- **services/**: Business logic for async jobs, report access, and notifications. `external_trigger_service.py` will bridge events/webhooks/polling triggers to validation once the design is confirmed.
 - **middlewares.py**: Logging, timing, and authentication hooks.
 - **settings.py**: Environment configuration (loaded from `.env`).
 - **app_factory.py**: Constructs the FastAPI application.
@@ -208,7 +211,8 @@ dq_integration/
 ├── azure_blob/
 │   ├── blob_client.py
 │   ├── blob_storage_config.py
-│   └── blob_job_adapter.py
+│   ├── blob_job_adapter.py
+│   └── external_triggers.py   # Placeholder for event/polling helpers once chosen
 ├── power_platform/
 │   ├── powerapps_connector.py
 │   ├── powerbi_exporter.py
@@ -219,9 +223,21 @@ dq_integration/
 	└── ms_teams_notifier.py
 ```
 
-- **azure_blob/**: Handles file storage, retrieval, and event-driven validations using Azure Blob containers.
+- **azure_blob/**: Handles file storage, retrieval, and (future) event-driven or polled validations using Azure Blob containers; `external_triggers.py` keeps hooks ready for whichever orchestration model is approved.
 - **power_platform/**: Enables integration with PowerApps, Power BI, and Power Automate (MS Flow).
 - **notifications/**: Sends alerts and reports via email, webhooks, or MS Teams.
+
+#### Decoupled upload architecture (future scenario)
+- **Goal:** Allow large file ingestion to happen through a dedicated upload service (e.g., Azure Functions, Logic Apps, or enterprise middleware) while the Data Quality Assessment API focuses on validation and reporting.
+- **Trigger options (decision deferred):**
+  - *Event-driven:* Azure Event Grid or Storage queue event signals the DQ API to pull the blob by URI.
+  - *Webhook relay:* Upload service calls a lightweight `external_uploads` endpoint with blob metadata when transfers complete.
+  - *Scheduled polling:* Background worker queries storage for ready-to-validate blobs and enqueues jobs.
+- **DQ API expectations:** Receives immutable blob references (URI, ETag/checksum, tenant metadata) and creates profiling-driven validation contexts before executing rules.
+- **Routing impact:** `dq_api/routes/external_uploads.py` (placeholder) will host future endpoints that accept blob references instead of raw files.
+- **Integration impact:** `dq_integration/azure_blob/` keeps Azure SDK adapters plus future event hook helpers coordinating with the chosen trigger model.
+- **Observability:** Metadata and lineage services must record external upload source, trigger type, and correlation IDs so runs remain auditable.
+- **Status:** Architecture documented in anticipation of the decision; direct uploads remain supported until the organization confirms the orchestration path.
 
 ---
 

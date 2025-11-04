@@ -8,7 +8,7 @@ sequenceDiagram
 
     ADM->>API: Request compliance evidence pack
     API->>MD: Gather lineage + audit logs
-    MD->>EXP: Provide compiled metadata
+    MD->>EXP: Provide compiled metadata + profiling context history
     EXP->>ST: Store generated evidence bundle
     EXP->>MD: Record export metadata
     NT->>ADM: Send download link/confirmation
