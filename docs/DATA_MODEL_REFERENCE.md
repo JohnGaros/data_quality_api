@@ -61,9 +61,68 @@ Out of scope:
 
 Rules may compute these at runtime if tenants do not supply them. Configurations must define formula components and fallback values.
 
-## 5. Mapping templates
+## 5. Data cleansing rule catalog
 
-### 5.1 Required columns for Billing dataset
+### 5.1 Canonical cleansing rule object
+- `rule_id`: Unique identifier (UUID string).
+- `name`: Human-readable label.
+- `dataset_type`: Applies to a specific canonical dataset (e.g., `billing`, `payments`).
+- `version`: Semantic version string managed independently from validation rules.
+- `transformations`: Ordered list of transformation steps. Each step includes:
+  - `type`: Transformation keyword (`standardize`, `deduplicate`, `normalize_field`, `enrich_lookup`, `drop_records`).
+  - `target_fields`: Logical field names affected by the step.
+  - `parameters`: Key/value map configuring the behaviour (e.g., `format`, `lookup_table`, `dedupe_keys`).
+  - `condition`: Optional expression describing when to apply the step.
+  - `severity`: `hard` removes or rejects records, `soft` logs warnings while retaining data.
+- `audit_tags`: Metadata emitted with each run (e.g., `{"source": "system", "purpose": "pre-validation"}`).
+
+### 5.2 Example cleansing rule snippet
+```json
+{
+  "rule_id": "cln-billing-standardisation",
+  "name": "Billing dataset standardisation",
+  "dataset_type": "billing",
+  "version": "2024.06.01",
+  "transformations": [
+    {
+      "type": "standardize",
+      "target_fields": ["Currency"],
+      "parameters": {
+        "format": "ISO-4217",
+        "default_currency": "tenant_default"
+      }
+    },
+    {
+      "type": "deduplicate",
+      "target_fields": ["InvoiceNumber"],
+      "parameters": {
+        "keys": ["InvoiceNumber", "BillingPeriod"],
+        "retain": "latest"
+      },
+      "severity": "hard"
+    },
+    {
+      "type": "fill_missing",
+      "target_fields": ["CustomerId"],
+      "parameters": {
+        "lookup": "customer_master",
+        "on_failure": "reject"
+      }
+    }
+  ]
+}
+```
+
+### 5.3 Typical cleansing transformations
+- **Standardise formats:** Normalise date, currency, and code values to canonical formats before validation.
+- **Deduplicate:** Remove duplicate records based on configurable keys; supports retaining earliest or latest record.
+- **Fill or enrich:** Populate missing values using reference datasets or default expressions.
+- **Split and merge:** Reshape columns (e.g., split concatenated fields) to match logical field expectations.
+- **Reject with reason:** Flag and quarantine records that cannot be transformed safely; metadata layer records reason codes.
+
+## 6. Mapping templates
+
+### 6.1 Required columns for Billing dataset
 | Logical field | File column example | Transform |
 | ------------- | ------------------- | --------- |
 | `BillingPeriod` | `Month` | Parse `MM/YYYY` to `YYYY-MM`. |
@@ -75,13 +134,13 @@ Rules may compute these at runtime if tenants do not supply them. Configurations
 | `Currency` | `Currency` | Uppercase 3-letter code. |
 | `BillingStatus` | `Status` | Map local labels to canonical values. |
 
-### 5.2 Mapping guidance
+### 6.2 Mapping guidance
 - Each tenant supplies a mapping file or uses the admin UI to align their column names to logical fields.
 - Mappings must specify data type conversion rules and default values if the source column is missing.
 - Configurations log the author, date, and version comment for traceability.
 - System should validate mapped columns exist in uploaded files and raise warnings when optional fields are missing.
 
-## 6. Data validation signals
+## 7. Data validation signals
 - **Formats:** Currency fields must use decimal separators consistent with locale; dates must be ISO or convertible via mapping rules.
 - **Ranges:** Monetary values should fall within tenant-defined ranges (e.g., -1,000 to 1,000,000). Negative values require explicit approval rules.
 - **Uniqueness:** `InvoiceNumber` must be unique per tenant and billing period; duplicates flagged as hard failures.
@@ -89,21 +148,20 @@ Rules may compute these at runtime if tenants do not supply them. Configurations
 - **Completeness:** Mandatory fields per dataset cannot be blank; soft rules may allow single blanks with warnings.
 - **Derived accuracy:** Derived fields must match recomputed values; mismatches flagged for review.
 
-## 7. Tenant onboarding checklist
+## 8. Tenant onboarding checklist
 - Gather sample billing, payment, and customer files.
 - Identify column names, formats, and quirks (e.g., multiple sheets, locale differences).
 - Complete mapping template with logical field links and transformation rules.
 - Define tenant-specific value whitelists (currencies, segments).
 - Confirm retention and privacy constraints for the tenant’s data.
 
-## 8. Acceptance checkpoints
+## 9. Acceptance checkpoints
 - Mapping templates validated against sample files without errors.
 - Rule engine can execute a smoke test using the canonical datasets.
 - Documentation updated when new logical fields or datasets are introduced.
 
-## 9. Open questions
+## 10. Open questions
 - Additional domain-specific datasets (e.g., adjustments, credits) needed for MVP?
 - Minimum data sample size required before onboarding a tenant.
 - Whether tenants can define custom derived fields beyond the baseline set.
 - Localization handling for multi-language column headers.
-

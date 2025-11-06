@@ -54,6 +54,7 @@ data_quality_api/
 ```text
 src/
 ├── dq_core/           # Core rule engine and models
+├── dq_cleansing/      # Data cleansing orchestration parallel to validation
 ├── dq_api/            # REST API layer (FastAPI)
 ├── dq_config/         # Rule and mapping configuration management
 ├── dq_admin/          # System and tenant administration
@@ -100,7 +101,39 @@ dq_core/
 
 ---
 
-### 4.2 `dq_api/` — REST API Layer
+### 4.2 `dq_cleansing/` — Data Cleansing Engine
+
+**Purpose:** Hosts the cleansing rule governance model and execution engine that prepares datasets before validation runs.
+
+```text
+dq_cleansing/
+├── models/
+│   ├── cleansing_rule.py
+│   ├── cleansing_job.py
+│   └── cleansing_config.py
+├── engine/
+│   ├── cleansing_engine.py
+│   ├── transformer.py
+│   └── validators.py
+└── report/
+	├── cleansing_report.py
+	└── exporters.py
+```
+
+- **models/**: Pydantic schemas for cleansing rules, job definitions, and configuration bundles, mirroring the structure used by validation rules.
+- **engine/**: Applies ordered cleansing transformations (standardisation, enrichment, survivorship), capturing execution metadata so jobs remain auditable and replayable.
+- **report/**: Emits cleansing run summaries, including per-transformation metrics, rejected records, and downstream export helpers.
+
+**Integration with validation pipeline:**
+
+- `dq_api.services.cleansing_job_manager.CleansingJobManager` invokes the cleansing engine before validation when tenants opt in or policies require pre-validation cleansing.
+- Cleansing outputs (normalised datasets plus job metadata) are persisted so the validation engine can consume them without re-reading source blobs.
+- Metadata events mirror those produced by validation jobs, allowing independent lineage, audit, and rollback of cleansing runs.
+- Configurations are versioned separately from validation rules but orchestrated through the same approval workflow to keep governance aligned.
+
+---
+
+### 4.3 `dq_api/` — REST API Layer
 
 **Purpose:** Exposes core functionality through REST endpoints (FastAPI). Organized by user role and functional domain.
 
@@ -110,12 +143,14 @@ dq_api/
 │   ├── uploads.py
 │   ├── external_uploads.py   # Future: accepts blob references from external orchestrators
 │   ├── validation.py
+│   ├── cleansing.py          # CRUD and orchestration endpoints for cleansing rules/jobs
 │   ├── rules.py
 │   ├── tenants.py
 │   ├── auth.py
 │   └── health.py
 ├── services/
 │   ├── job_manager.py
+│   ├── cleansing_job_manager.py
 │   ├── report_service.py
 │   ├── notification_service.py
 │   └── external_trigger_service.py  # Future: coordinates decoupled upload triggers
@@ -127,7 +162,8 @@ dq_api/
 ```
 
 - **routes/**: HTTP endpoints grouped by functionality and user role. `external_uploads.py` is a placeholder until the organisation finalises how external blob references will enter the system.
-- **services/**: Business logic for async jobs, report access, and notifications. `external_trigger_service.py` will bridge events/webhooks/polling triggers to validation once the design is confirmed.
+- **services/**: Business logic for async jobs, cleansing orchestration, report access, and notifications. `external_trigger_service.py` will bridge events/webhooks/polling triggers to validation once the design is confirmed.
+- **Cleansing orchestration:** `cleansing_job_manager.py` manages cleansing job plans, persists run results, and can automatically chain into `job_manager.JobManager` so cleansed outputs feed the validation engine without additional uploads.
 - **middlewares.py**: Logging, timing, and authentication hooks.
 - **settings.py**: Environment configuration (loaded from `.env`).
 - **app_factory.py**: Constructs the FastAPI application.
@@ -140,7 +176,7 @@ dq_api/
 
 ---
 
-### 4.3 `dq_config/` — Configuration Management
+### 4.4 `dq_config/` — Configuration Management
 
 **Purpose:** Manages parsing, validation, and versioning of configuration artifacts such as rule definitions and mappings.
 
@@ -159,7 +195,7 @@ dq_config/
 
 ---
 
-### 4.4 `dq_admin/` — Administrative Layer
+### 4.5 `dq_admin/` — Administrative Layer
 
 **Purpose:** Provides system-level management for users, tenants, roles, and audit trails.
 
@@ -178,7 +214,7 @@ dq_admin/
 
 ---
 
-### 4.5 `dq_metadata/` — Metadata & Governance Layer
+### 4.6 `dq_metadata/` — Metadata & Governance Layer
 
 **Purpose:** Centralizes governance metadata for datasets, validation jobs, rule versions, and audit events.
 
@@ -202,7 +238,7 @@ This layer underpins governance by supporting audit evidence, compliance tagging
 
 ---
 
-### 4.6 `dq_integration/` — External Integrations
+### 4.7 `dq_integration/` — External Integrations
 
 **Purpose:** Manages connectivity with external platforms, such as Azure Blob Storage and Microsoft Power Platform.
 
@@ -241,9 +277,9 @@ dq_integration/
 
 ---
 
-### 4.7 `dq_dsl/` — Domain-Specific Language (Future Enhancement)
+### 4.8 `dq_dsl/` — Domain-Specific Language (Future Enhancement)
 
-### 4.8 `dq_security/` — Enterprise Security Layer
+### 4.9 `dq_security/` — Enterprise Security Layer
 
 **Purpose:** Centralized module for identity, authorization, secret management, and audit logging — ensuring compliance with enterprise security requirements on Azure.
 
@@ -269,7 +305,7 @@ This layer is critical for ensuring Zero Trust compliance, multi-tenant isolatio
 
 ---
 
-### 4.9 `dq_tests/` — Testing Framework (Future)
+### 4.10 `dq_tests/` — Testing Framework (Future)
 
 **Purpose:** Automated regression testing for rules and configurations.
 
@@ -290,7 +326,7 @@ dq_tests/
 
 ---
 
-### 4.10 `main.py` — API Entrypoint
+### 4.11 `main.py` — API Entrypoint
 
 **Purpose:** Bootstraps the FastAPI app, loads configuration, and starts the API service.
 
@@ -313,13 +349,15 @@ configs/
 ├── example_dq_config.json
 ├── logging.yaml
 ├── settings.env
-└── rules/
+├── dq_rules/
+└── cleansing_rules/
 ```
 
 - `example_dq_config.json`: Example configuration file following the DQConfig schema.
 - `logging.yaml`: Logging configuration (used by API and engine).
 - `settings.env`: Environment variables for local development.
-- `rules/`: Folder for versioned rule libraries or FDR exports.
+- `dq_rules/`: Folder for versioned data quality rule libraries or FDR exports.
+- `cleansing_rules/`: Parallel library for cleansing templates; versioned independently and governed by cleansing approvals.
 
 ---
 

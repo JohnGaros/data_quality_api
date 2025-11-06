@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant CF as Configurator/Scheduler
+    participant API as API Gateway
+    participant CJM as Cleansing Job Manager
+    participant CE as Cleansing Engine
+    participant ST as Cleansed Storage
+    participant MD as Metadata Registry
+    participant NT as Notification Service
+
+    CF->>API: POST /cleansing-jobs (tenant, dataset, rule version)
+    API->>CJM: Create cleansing job plan
+    CJM->>MD: Record job submission + parameters
+    CJM->>CE: Dispatch transformation plan
+    CE->>CE: Apply ordered transformations
+    CE->>ST: Persist cleansed dataset + rejection set
+    CE->>MD: Emit before/after metrics + rejection reasons
+    CE->>CJM: Return completion status
+    CJM->>NT: Trigger completion/alert notification
+    NT->>CF: Deliver success/failure update
+    CF->>API: Retrieve cleansing report or download cleansed data

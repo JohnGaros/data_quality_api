@@ -7,7 +7,28 @@
 
 Diagrams are stored under `docs/diagrams/` to keep visuals organised.
 
-## 2. Upload, validate, and report
+## 2. Cleansing job lifecycle
+1. **Configurator or scheduler** submits a cleansing job through the API, specifying tenant, dataset type, and cleansing rule version; metadata layer records the request.
+2. **Cleansing job manager** resolves the source dataset (raw upload or latest approved dataset) and builds an ordered transformation plan.
+3. **Cleansing engine** executes each transformation step (standardise, deduplicate, enrich), logging before/after metrics and rejected records.
+4. **Output writer** stores the cleansed dataset and staged rejection set; metadata links storage locations and transformation metrics to the job.
+5. **Metadata registry** publishes lineage, audit events, and readiness indicators so downstream services can observe SLA health.
+6. **Notifications service** informs stakeholders of completion or failure; reports include cleansing metrics and download links where applicable.
+
+Diagram: `docs/diagrams/cleansing_job_flow.mmd`.
+
+## 3. Chained cleansing → validation sequence
+1. **Uploader** submits files via API or UI; metadata layer records the submission and indicates that cleansing is required for the dataset type.
+2. **Cleansing job manager** launches the cleansing job, monitors completion, and, on success, pins the cleansed dataset URI plus applied rule version.
+3. **Job manager** instantiates the validation job using the cleansed dataset as input, carrying over tenant context, profiling preferences, and job linkage IDs.
+4. **Validation engine** builds or reuses the profiling-driven validation context, runs rules against the cleansed dataset, and streams results to the report builder.
+5. **Reporting layer** merges cleansing and validation outputs so users see a unified view (records cleansed, rules failed, overall status).
+6. **Metadata registry** finalises lineage entries showing raw upload → cleansing job → validation job, enabling reruns or targeted investigations.
+7. **Notifications** emit aggregated updates with references to both job IDs for traceability.
+
+Diagram: `docs/diagrams/cleansing_validation_chain.mmd`.
+
+## 4. Upload, validate, and report
 1. **Uploader** submits files via API or UI; metadata layer records submission.
 2. **Job manager** stores the files, queues a validation job, assigns configuration version, and triggers dataset profiling.
 3. **Profiling workers** produce a snapshot of field statistics that becomes the profiling-driven validation context seed.
@@ -17,7 +38,7 @@ Diagrams are stored under `docs/diagrams/` to keep visuals organised.
 
 See `docs/diagrams/upload_validation_flow.mmd` for the flow diagram.
 
-## 3. Decoupled upload hand-off (future scenario)
+## 5. Decoupled upload hand-off (future scenario)
 1. **External upload service** writes files to Azure Blob Storage and records metadata (tenant, dataset type, checksum).
 2. **Trigger mechanism (event/webhook/polling — decision pending)** notifies the Data Quality Assessment API with a blob reference and integrity metadata.
 3. **External uploads endpoint** in the DQ API validates the reference, queues a validation job, and captures ingestion mode details.
@@ -27,7 +48,7 @@ See `docs/diagrams/upload_validation_flow.mmd` for the flow diagram.
 
 Diagram: `docs/diagrams/external_upload_trigger.mmd`.
 
-## 4. Configuration promotion lifecycle
+## 6. Configuration promotion lifecycle
 1. **Configurator** edits rule templates and uploads draft configuration.
 2. **Validation** step checks for schema errors, runs sandbox tests, and refreshes the profiling baseline used to build profiling-driven validation contexts.
 3. **Configurator** submits change for approval; metadata logs pending status.
@@ -37,7 +58,7 @@ Diagram: `docs/diagrams/external_upload_trigger.mmd`.
 
 Diagram: `docs/diagrams/config_promotion_flow.mmd`.
 
-## 5. Audit and compliance reporting
+## 7. Audit and compliance reporting
 1. **Admin** or auditor requests compliance evidence package.
 2. **Metadata registry** gathers lineage, audit events, and configuration history.
 3. **Export service** generates files (JSON/CSV/PDF) and stores them securely.
@@ -46,7 +67,7 @@ Diagram: `docs/diagrams/config_promotion_flow.mmd`.
 
 Diagram: `docs/diagrams/compliance_reporting_flow.mmd`.
 
-## 6. Future enhancements
+## 8. Future enhancements
 - Add workflows for integration triggers (Power Platform, webhooks) once designed.
 - Include incident response flow after the security runbook is complete.
 - Update diagrams as stakeholder decisions (approvals, retention tiers) are finalised.

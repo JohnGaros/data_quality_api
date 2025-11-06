@@ -14,6 +14,7 @@
 
 ## 3. Shared objects
 - **Job status values:** `pending`, `running`, `succeeded`, `failed`, `cancelled`.
+- **Cleansing job stages:** `planned`, `running`, `succeeded`, `failed`, `skipped` (used when validation runs without cleansing).
 - **Rule severity:** `hard` (blocks) or `soft` (warns).
 - **Identifiers:** UUID strings supplied by the platform; clients provide idempotency keys via header `X-Idempotency-Key`.
 - **Profiling context metadata:** `profiling_context_id`, `profiled_at`, and a list of dynamic threshold overrides applied during validation.
@@ -32,7 +33,26 @@
 | GET | `/uploads/{job_id}/report` | Download validation report | Query `format=json\|csv`. Includes list of failed rows, rules, and profiling adjustments that impacted outcomes. |
 | POST | `/uploads/{job_id}/rerun` | Revalidate with latest config | Admin or Configurator scope; creates new job linked to original and rebuilds the profiling-driven validation context. |
 
-### 4.2 Rule library management (Configurator scope)
+### 4.2 Data cleansing rules and jobs (Configurator scope)
+#### Rule catalog
+| Method | Path | Purpose | Notes |
+| ------ | ---- | ------- | ----- |
+| GET | `/cleansing-rules` | List cleansing rules | Filters: `status`, `category`, `tenant`, `transformation_type`. |
+| GET | `/cleansing-rules/{rule_id}` | Fetch cleansing rule details | Returns ordered transformation steps, preconditions, and rollback policy. |
+| POST | `/cleansing-rules/import` | Upload cleansing rule template | Accepts Excel/JSON payload; validates schema and stores as draft version. |
+| PATCH | `/cleansing-rules/{rule_id}` | Update cleansing rule metadata | Edit description, activation window, default chaining behaviour. |
+| POST | `/cleansing-rules/validate` | Dry-run cleansing rule set | Accepts sample dataset reference; returns transformed preview and metrics. |
+
+#### Job operations
+| Method | Path | Purpose | Notes |
+| ------ | ---- | ------- | ----- |
+| POST | `/cleansing-jobs` | Launch cleansing job | Body includes `dataset_type`, `tenant_id`, optional `rule_version`, chaining preferences. Returns `cleansing_job_id`. |
+| GET | `/cleansing-jobs` | List cleansing jobs | Supports filters: `tenant_id`, `status`, `dataset_type`, `submitted_by`. |
+| GET | `/cleansing-jobs/{job_id}` | Check cleansing job status | Includes before/after row counts, rejected records, linked validation job if chained. |
+| POST | `/cleansing-jobs/{job_id}/rerun` | Rerun cleansing job | Optionally supply new rule version; records reason in metadata. |
+| POST | `/cleansing-jobs/{job_id}/chain-validation` | Trigger validation with cleansed output | Creates validation job referencing cleansing output; returns new `job_id`. |
+
+### 4.3 Rule library management (Configurator scope)
 | Method | Path | Purpose | Notes |
 | ------ | ---- | ------- | ----- |
 | GET | `/rules` | List rules with filters | Supports query params: `status`, `category`, `severity`, `tenant`. |
@@ -41,7 +61,7 @@
 | PATCH | `/rules/{rule_id}` | Update rule metadata | Allows editing severity, description, activation dates. |
 | POST | `/rules/validate` | Dry-run rule set | Accepts sample dataset reference; returns validation outcome without persisting. |
 
-### 4.3 Logical fields and mappings (Configurator scope)
+### 4.4 Logical fields and mappings (Configurator scope)
 | Method | Path | Purpose | Notes |
 | ------ | ---- | ------- | ----- |
 | GET | `/logical-fields` | List logical fields | Includes description, data type, default transformations. |
@@ -49,7 +69,7 @@
 | GET | `/mappings` | Retrieve field mappings per tenant | Query by `tenant_id` and optionally `version`. |
 | POST | `/mappings` | Upload mapping template | Validates column references and calculation syntax. |
 
-### 4.4 Configuration lifecycle (Configurator + Admin scope)
+### 4.5 Configuration lifecycle (Configurator + Admin scope)
 | Method | Path | Purpose | Notes |
 | ------ | ---- | ------- | ----- |
 | GET | `/configs` | List configuration versions | Shows status: `draft`, `pending_approval`, `approved`, `retired`. |
@@ -58,7 +78,7 @@
 | POST | `/configs/{config_id}/promote` | Promote to production | Activates configuration for specified tenants. |
 | POST | `/configs/{config_id}/rollback` | Restore previous version | Reverts active config; logs reason. |
 
-### 4.5 Tenant and user administration (Admin scope)
+### 4.6 Tenant and user administration (Admin scope)
 | Method | Path | Purpose | Notes |
 | ------ | ---- | ------- | ----- |
 | POST | `/tenants` | Create tenant | Requires name, contact info, retention policy. Returns tenant credentials stub. |
@@ -68,25 +88,25 @@
 | PATCH | `/users/{user_id}` | Update role or disable user | Audit trail captures modifier and reason. |
 | POST | `/tokens` | Issue integration token | Admin chooses scopes and expiry. Response masks secret after first view. |
 
-### 4.6 Observability and auditing (Admin scope)
+### 4.7 Observability and auditing (Admin scope)
 | Method | Path | Purpose | Notes |
 | ------ | ---- | ------- | ----- |
 | GET | `/metrics` | Retrieve platform metrics snapshot | Returns counts, durations, queue depth; formatted for dashboards. |
 | GET | `/audit-log` | Query audit events | Filters: `actor`, `action`, `tenant`, `date_range`. Supports pagination. |
 | GET | `/health` | Lightweight health check | Used by load balancers; returns dependency status. |
 
-### 4.7 Notifications and webhooks (Configurator/Admin scope)
+### 4.8 Notifications and webhooks (Configurator/Admin scope)
 | Method | Path | Purpose | Notes |
 | ------ | ---- | ------- | ----- |
 | GET | `/notifications/settings` | View current notification preferences | Includes email groups, webhook URLs, severity thresholds. |
 | POST | `/notifications/settings` | Create or update preferences | Validates webhook endpoints via challenge handshake. |
 | POST | `/notifications/test` | Send test notification | Confirms channels before going live. |
 
-### 4.8 Metadata and audit catalog (Configurator/Admin scope)
+### 4.9 Metadata and audit catalog (Configurator/Admin scope)
 | Method | Path | Purpose | Notes |
 | ------ | ---- | ------- | ----- |
 | GET | `/metadata/assets` | List registered data assets | Filters by `tenant_id`, `dataset_type`, `classification`. |
-| GET | `/metadata/jobs` | Query validation job lineage | Supports filters: `job_id`, `tenant_id`, `status`, `config_version`, date range. |
+| GET | `/metadata/jobs` | Query cleansing and validation job lineage | Supports filters: `job_id`, `tenant_id`, `status`, `config_version`, `cleansing_rule_version`, date range. |
 | GET | `/metadata/rules` | Fetch rule version history | Returns version chain with approval metadata. |
 | GET | `/metadata/audit-events` | Retrieve audit trail entries | Requires Admin scope; supports pagination and action filters. |
 | POST | `/metadata/export` | Generate compliance evidence package | Async job returning signed URL when ready. |
@@ -124,7 +144,7 @@
   "errors": []
 }
 
-### 5.3 Example: POST `/external-uploads` (future)
+### 5.2 Example: POST `/external-uploads` (future)
 ```json
 {
   "tenant_id": "TNT-001",
@@ -157,7 +177,7 @@
 }
 ```
 
-### 5.2 Example: GET `/uploads/{job_id}`
+### 5.3 Example: GET `/uploads/{job_id}`
 ```json
 {
   "data": {
@@ -184,6 +204,70 @@
     "finished_at": "2024-05-09T12:34:55Z"
   },
   "meta": {},
+  "errors": []
+}
+```
+
+### 5.4 Example: POST `/cleansing-jobs`
+```json
+{
+  "tenant_id": "TNT-001",
+  "dataset_type": "billing",
+  "source_job_id": "job-123",
+  "rule_version": "cln_2024_06_01",
+  "chain_validation": true,
+  "options": {
+    "deduplicate_by": ["InvoiceNumber", "BillingPeriod"],
+    "standardize_currency": "tenant_default"
+  }
+}
+```
+```json
+{
+  "data": {
+    "cleansing_job_id": "cln-job-456",
+    "status": "planned",
+    "rule_version": "cln_2024_06_01",
+    "chain_validation": true
+  },
+  "meta": {
+    "linked_upload_job_id": "job-123"
+  },
+  "errors": []
+}
+```
+
+### 5.5 Example: GET `/cleansing-jobs/{job_id}`
+```json
+{
+  "data": {
+    "cleansing_job_id": "cln-job-456",
+    "tenant_id": "TNT-001",
+    "dataset_type": "billing",
+    "status": "succeeded",
+    "rule_version": "cln_2024_06_01",
+    "before_counts": {
+      "rows": 12850,
+      "duplicates": 320
+    },
+    "after_counts": {
+      "rows": 12530,
+      "deduplicated": 300,
+      "rejected": 20
+    },
+    "rejected_sample": [
+      {
+        "row_number": 512,
+        "reason": "Missing CustomerId after normalization"
+      }
+    ],
+    "started_at": "2024-06-01T10:05:00Z",
+    "finished_at": "2024-06-01T10:07:35Z",
+    "linked_validation_job_id": "job-789"
+  },
+  "meta": {
+    "chain_state": "complete"
+  },
   "errors": []
 }
 ```

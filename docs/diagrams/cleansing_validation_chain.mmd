@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant U as Uploader
+    participant API as API Gateway
+    participant CJM as Cleansing Job Manager
+    participant CE as Cleansing Engine
+    participant JM as Validation Job Manager
+    participant PF as Profiling Service
+    participant RE as Rule Engine
+    participant RS as Report Service
+    participant MD as Metadata Registry
+    participant NT as Notification Service
+
+    U->>API: Upload dataset with cleansing enabled
+    API->>CJM: Launch cleansing job
+    CJM->>MD: Persist cleansing job metadata
+    CJM->>CE: Execute cleansing transformations
+    CE->>MD: Record cleansing metrics + output URI
+    CE->>CJM: Return success with cleansed dataset reference
+    CJM->>JM: Chain validation job with cleansed dataset
+    JM->>PF: Request profiling snapshot (cleansed context)
+    PF->>MD: Save profiling context
+    PF->>RE: Provide profiling-driven context
+    JM->>RE: Dispatch validation using cleansed dataset
+    RE->>MD: Log rule outcomes linked to cleansing job
+    RE->>RS: Send validation results
+    RS->>MD: Store combined report references
+    JM->>NT: Issue consolidated notification
+    NT->>U: Deliver status with both job IDs

@@ -1,19 +1,20 @@
 # Business Requirements Document — Data Quality Assessment API
 
 ## 1. Executive summary
-- Build an enterprise-ready API service that validates customer datasets against centralized business rules.
+- Build an enterprise-ready API service that cleanses and validates customer datasets against centralized business rules.
 - Provide consistent, auditable data-quality outcomes across multiple tenants with minimal manual oversight.
 - Enable configuration teams and admins to manage rules, mappings, and compliance metadata without developer intervention.
 
 ## 2. Business objectives
-1. Standardize how customer data quality is measured and reported.
+1. Standardize how customer data cleansing and quality validation are measured and reported.
 2. Reduce turnaround time for onboarding new customers or schema changes.
 3. Deliver transparent audit trails and compliance evidence for regulators and internal governance teams.
 4. Support future workflow automation and analytics integrations without major rework.
+5. Provide a governed cleansing rules framework that can evolve independently from validation rules.
 
 ## 3. Scope
 ### 3.1 In scope
-- REST API for file uploads, validation jobs, reporting, configuration management, and metadata access.
+- REST API for file uploads, cleansing jobs, validation jobs, reporting, configuration management, and metadata access.
 - Admin tooling for tenant management, RBAC, approvals, and retention settings.
 - Metadata layer that captures lineage, audit events, and compliance tags.
 - Documentation, test scaffolding, and deployment assets needed for launch.
@@ -34,14 +35,12 @@
 | Configuration team | Data stewards, configurators | Flexible rule management, sandbox testing. |
 | End users | Data submitters, external partners | Clear validation feedback, fast turnaround. |
 
-## 5. Product overview
-- Multi-tenant API that accepts Excel/CSV uploads, runs validations via a rule engine, and returns detailed reports.
-- Configurable rule library based on logical fields that abstract tenant-specific schemas.
-- Metadata registry that documents every job, rule version, and user action for governance.
+- Multi-tenant API that accepts Excel/CSV uploads, runs cleansing pipelines and validations via modular engines, and returns detailed reports.
+- Configurable rule libraries for cleansing and validation, based on logical fields that abstract tenant-specific schemas.
+- Metadata registry that documents every upload, cleansing job, validation job, rule version, and user action for governance.
 - Designed for Azure-native deployment with enterprise security (SSO, Key Vault, RBAC).
 
-## 6. Functional requirements summary
-- File intake, validation execution, reporting, configuration lifecycle, and admin operations as detailed in `docs/FUNCTIONAL_REQUIREMENTS.md`.
+- File intake, cleansing execution, validation execution, reporting, configuration lifecycle, and admin operations as detailed in `docs/FUNCTIONAL_REQUIREMENTS.md`.
 - Metadata endpoints for lineage queries, audit event retrieval, compliance tagging, and evidence exports.
 - Automation-friendly workflows (idempotent uploads, scriptable APIs, reruns).
 
