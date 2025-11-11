@@ -15,6 +15,14 @@ Diagrams are stored under `docs/diagrams/` to keep visuals organised.
 5. **Metadata registry** publishes lineage, audit events, and readiness indicators so downstream services can observe SLA health.
 6. **Notifications service** informs stakeholders of completion or failure; reports include cleansing metrics and download links where applicable.
 
+**Triggers:** Manual API requests, scheduler-based reruns (e.g., nightly refresh), or automatic chaining from an upload event that is flagged as “cleansing required.” Each trigger supplies the job reason so auditors can distinguish proactive reruns from reactive remediation.
+
+**Inputs:** Tenant context, dataset classification, cleansing rule version, optional profiling hints, and storage pointers to the source dataset. Optional overrides include transformation allowlists/denylists and thresholds for duplicate/conflict detection.
+
+**Outputs:** Cleaned dataset URI, rejection dataset URI, transformation metrics (records touched, duplicates removed, nulls imputed), and metadata describing the applied cleansing rule version plus execution timings. Outputs are versioned so validation jobs can pin the exact cleansing state.
+
+**Error handling:** Failures (e.g., schema mismatch, transformation defect, storage outage) are bubbled to the job manager, which marks the job failed, records the stack trace and offending transformation, retries idempotent stages when safe, and emits notifications. Partial outputs are tagged as unusable to prevent downstream profiling from reading incomplete cleansed data.
+
 Diagram: `docs/diagrams/cleansing_job_flow.mmd`.
 
 ## 3. Chained cleansing → validation sequence

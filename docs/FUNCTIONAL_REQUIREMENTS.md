@@ -32,7 +32,7 @@ Out of scope for now:
 
 *Profiling-driven example:* If profiling shows a tenant's historical null rate for `PaymentAmount` stays below 2%, the profiling-driven validation context tightens the warning threshold to 3% for the next run so sudden spikes surface as soft alerts before hard failures occur. The same profiling logic applies whether the dataset arrived through direct upload or via an external blob reference.
 ### 4.2 Data cleansing orchestration (Uploader & Configurator focus)
-9. System must allow tenants to enable cleansing pipelines that execute before validation and can be scoped to specific dataset types.
+9. System must automatically cleanse incoming data before profiling and validation when policies require it, while letting tenants enable/disable specific cleansing pipelines per dataset type.
 10. Cleansing rules must be stored in a dedicated library with their own versioning, activation status, and approval workflow.
 11. Configurator must import or edit cleansing rule templates (Excel/JSON) through API endpoints parallel to validation rule management.
 12. Cleansing jobs must support queueing, retry, and status polling semantics equivalent to validation jobs for Uploader visibility.

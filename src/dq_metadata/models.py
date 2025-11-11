@@ -27,6 +27,7 @@ class ValidationJobMetadata(BaseModel):
     job_id: str = Field(..., description="Validation job identifier.")
     tenant_id: str = Field(..., description="Tenant associated with this job.")
     submission_source: str = Field(..., description="Entry point (API, UI, automation).")
+    ingestion_mode: Optional[str] = Field(None, description="How the job was ingested (direct_upload, external_reference, automation, etc.).")
     config_version: Optional[str] = Field(None, description="Configuration version applied.")
     status: str = Field(..., description="Current job status (pending, running, etc.).")
     input_assets: List[UUID] = Field(default_factory=list, description="Assets that fed into the job.")

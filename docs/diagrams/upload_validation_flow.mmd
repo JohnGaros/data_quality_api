@@ -2,6 +2,8 @@ sequenceDiagram
     participant U as Uploader
     participant API as API Gateway
     participant JM as Job Manager
+    participant CJM as Cleansing Job Manager
+    participant CE as Cleansing Engine
     participant PF as Profiling Service
     participant RE as Rule Engine
     participant RS as Report Service
@@ -11,6 +13,13 @@ sequenceDiagram
     U->>API: Upload dataset + metadata
     API->>JM: Create validation job
     JM->>MD: Record job submission
+    JM->>CJM: Request cleansing plan (tenant policy)
+    CJM->>MD: Log cleansing job metadata
+    CJM->>CE: Execute cleansing transformations
+    CE->>MD: Persist cleansing metrics + rejection set refs
+    CE->>CJM: Return cleansed dataset URI
+    CJM->>JM: Provide cleansed dataset + applied rule version
+    Note right of CE: Deduplicate<br/>standardise formats<br/>handle missing values
     JM->>PF: Request profiling snapshot
     PF->>MD: Persist profiling metrics
     PF->>RE: Provide profiling-driven validation context

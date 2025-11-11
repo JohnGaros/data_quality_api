@@ -123,6 +123,7 @@ dq_cleansing/
 - **models/**: Pydantic schemas for cleansing rules, job definitions, and configuration bundles, mirroring the structure used by validation rules.
 - **engine/**: Applies ordered cleansing transformations (standardisation, enrichment, survivorship), capturing execution metadata so jobs remain auditable and replayable.
 - **report/**: Emits cleansing run summaries, including per-transformation metrics, rejected records, and downstream export helpers.
+- **Key entrypoint:** `src/dq_cleansing/engine/cleansing_engine.py` exposes the orchestrator invoked by `dq_api/services/cleansing_job_manager.py`, ensuring every cleansing job persists the cleansed dataset plus rejection set that profiling and validation will consume.
 
 **Integration with validation pipeline:**
 

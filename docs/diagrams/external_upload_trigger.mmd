@@ -4,6 +4,9 @@ sequenceDiagram
     participant TR as Trigger Mechanism
     participant API as DQ API (external uploads)
     participant JM as Job Manager
+    participant CJM as Cleansing Job Manager
+    participant CE as Cleansing Engine
+    participant PF as Profiling Service
     participant RE as Rule Engine
     participant MD as Metadata Registry
     participant NT as Notification Service
@@ -13,7 +16,16 @@ sequenceDiagram
     TR->>API: Send blob reference (URI, etag, trigger context)
     API->>JM: Register external upload and enqueue validation job
     JM->>MD: Persist ingestion mode + blob lineage
-    JM->>RE: Dispatch job with blob URI
-    RE->>ST: Fetch blob content
+    JM->>CJM: Request cleansing plan (tenant/dataset policy)
+    CJM->>MD: Log cleansing job metadata
+    CJM->>CE: Execute cleansing transforms
+    CE->>ST: Fetch blob content
+    CE->>MD: Record cleansing metrics + rejection set URIs
+    CE->>CJM: Return cleansed dataset pointer
+    CJM->>JM: Provide cleansed dataset + applied cleansing version
+    JM->>PF: Request profiling snapshot on cleansed dataset
+    PF->>MD: Store profiling metrics + context hash
+    PF->>RE: Supply profiling-driven validation context
+    JM->>RE: Dispatch job with cleansed dataset
     RE->>MD: Record rule execution + profiling adjustments
     RE->>NT: Publish validation outcome

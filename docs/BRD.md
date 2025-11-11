@@ -35,6 +35,12 @@
 | Configuration team | Data stewards, configurators | Flexible rule management, sandbox testing. |
 | End users | Data submitters, external partners | Clear validation feedback, fast turnaround. |
 
+## 5. Data cleansing business requirements
+1. **Mandatory pre-validation cleansing:** The platform must cleanse incoming datasets (duplicate removal, format standardisation, missing-value handling) whenever tenant or dataset policies require it so profiling and validation run against trusted inputs.
+2. **Policy-driven orchestration:** Business owners need to define cleansing triggers per dataset type (e.g., “always cleanse credit applications,” “only cleanse when null-rate exceeds threshold”) without redeploying code.
+3. **Audit-grade transparency:** Each cleansing job must produce metrics that show what changed (records cleansed, rejects, transformation deltas) and link them to the originating upload so auditors can trace corrective actions.
+4. **Business continuity:** Failures during cleansing must stop the downstream pipeline, notify stakeholders with actionable diagnostics, and allow resumable reruns so poor-quality data never reaches profiling/validation unnoticed.
+
 - Multi-tenant API that accepts Excel/CSV uploads, runs cleansing pipelines and validations via modular engines, and returns detailed reports.
 - Configurable rule libraries for cleansing and validation, based on logical fields that abstract tenant-specific schemas.
 - Metadata registry that documents every upload, cleansing job, validation job, rule version, and user action for governance.
