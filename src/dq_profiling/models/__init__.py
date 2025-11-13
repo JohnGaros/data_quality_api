@@ -1,7 +1,13 @@
 """Profiling-related Pydantic models."""
 
 from .profiling_job import ProfilingJob, ProfilingJobResult, ProfilingJobStatus
-from .profiling_snapshot import ProfilingFieldStats, ProfilingSnapshot
+from .profiling_snapshot import (
+    DistributionBucket,
+    DistributionSummary,
+    ProfilingFieldStats,
+    ProfilingSnapshot,
+    ValueFrequency,
+)
 
 __all__ = [
     "ProfilingJob",
@@ -9,4 +15,7 @@ __all__ = [
     "ProfilingJobStatus",
     "ProfilingSnapshot",
     "ProfilingFieldStats",
+    "DistributionSummary",
+    "DistributionBucket",
+    "ValueFrequency",
 ]

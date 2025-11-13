@@ -1,8 +1,33 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Literal
 
 from pydantic import BaseModel, Field
+
+
+class ValueFrequency(BaseModel):
+    """Frequency metadata for a given value."""
+
+    value: Any
+    count: int
+    percentage: float
+
+
+class DistributionBucket(BaseModel):
+    """Histogram bucket for numeric fields."""
+
+    start: float
+    end: float
+    count: int
+    percentage: float
+
+
+class DistributionSummary(BaseModel):
+    """Generic distribution descriptor."""
+
+    kind: Literal["numeric", "categorical"]
+    buckets: List[DistributionBucket] = Field(default_factory=list)
+    values: List[ValueFrequency] = Field(default_factory=list)
 
 
 class ProfilingFieldStats(BaseModel):
@@ -13,6 +38,12 @@ class ProfilingFieldStats(BaseModel):
     nulls: int = 0
     distinct: int = 0
     sample_values: List[Any] = Field(default_factory=list)
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    mean: Optional[float] = None
+    stddev: Optional[float] = None
+    frequent_values: List[ValueFrequency] = Field(default_factory=list)
+    distribution: Optional[DistributionSummary] = None
     thresholds: Dict[str, Any] = Field(
         default_factory=dict,
         description="Dynamic thresholds derived from historical profiling runs.",

@@ -34,8 +34,9 @@ Out of scope for now:
 
 #### dq_profiling module scope
 - `dq_profiling/models/` defines profiling job payloads, job status enums, and profiling snapshots so API endpoints and metadata events stay consistent.
-- `dq_profiling/engine/profiler.py` turns cleansed datasets into profiling snapshots, while `context_builder.py` converts those snapshots plus overrides into validation-ready contexts.
+- `dq_profiling/engine/profiler.py` turns cleansed datasets into profiling snapshots, computing per-field statistics (count, distinct count, null count), descriptive metrics (min, max, mean, standard deviation), top-N frequent values, and distribution summaries (numeric histograms or categorical value counts). `context_builder.py` converts those snapshots plus overrides into validation-ready contexts.
 - `dq_profiling/api/` reserves routing hooks for independent profiling requests (e.g., proactive profiling without full validation).
+- `dq_profiling/report/` packages profiling job results into human-readable summaries or CSV exports so Uploaders, Configurators, and auditors can inspect profiling signals—including the new statistics, frequent values, and distributions—without parsing raw datasets.
 - `dq_core` components consume the profiling contexts exclusively through the dq_profiling interfaces to enforce separation of concerns.
 ### 4.2 Data cleansing orchestration (Uploader & Configurator focus)
 9. System must automatically cleanse incoming data before profiling and validation when policies require it, while letting tenants enable/disable specific cleansing pipelines per dataset type.

@@ -30,7 +30,10 @@
 - **`dq_profiling/models/`:** Pydantic models for profiling jobs, job results, and profiling snapshots (per-field stats plus overrides).
 - **`dq_profiling/engine/`:** `ProfilingEngine` produces snapshots from datasets; `ProfilingContextBuilder` normalizes snapshots so the rule engine can consume them consistently.
 - **`dq_profiling/api/`:** Placeholder router that will expose profiling endpoints once the REST layer is ready.
+- **`dq_profiling/report/`:** `ProfilingReport` converts `ProfilingJobResult` snapshots into export-friendly structures (dict/CSV) so APIs and downstream consumers can surface profiling metrics (counts, min/max/mean/stddev, frequent values, numeric histograms, categorical distributions) without reprocessing datasets.
 - **Integration points:** `dq_core.engine.helpers` now delegates to `dq_profiling` for building contexts, and metadata specs reference profiling context IDs originating from this module.
+
+Profiling outputs now include per-attribute statistics (row counts, distinct counts, null counts), descriptive metrics (min, max, mean, standard deviation where numeric), top-N frequent values with percentages, and distribution summaries (histograms for numeric data and full value counts for categorical data). These enriched metrics power adaptive validation thresholds, metadata insights, and reporting experiences.
 
 ## 3. Upload pathways
 

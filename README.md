@@ -18,6 +18,7 @@
 - `src/dq_profiling/models/` contains Pydantic models for profiling jobs, results, and per-field snapshots so profiling metadata stays consistent across the API and metadata layers.
 - `src/dq_profiling/engine/` hosts the `ProfilingEngine` that computes dataset statistics plus the `ProfilingContextBuilder` that converts snapshots into rule-engine-ready contexts.
 - `src/dq_profiling/api/` keeps placeholder routers for future profiling-specific endpoints (e.g., proactive profiling or reruns independent of validation).
+- `src/dq_profiling/report/` turns profiling results into human-readable/exportable summaries, including per-field stats (counts, min/max/mean/stddev), frequent values, and numeric/categorical distributions so APIs, UIs, and audits can present profiling metrics without rehydrating raw snapshots.
 - `dq_core.engine` uses these interfaces instead of rolling its own helpers, keeping profiling responsibilities encapsulated.
 
 ## Who should read this

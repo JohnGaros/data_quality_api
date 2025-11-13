@@ -27,6 +27,8 @@
 - `dq_profiling/models` emit strongly typed profiling job and snapshot records that map directly to the metadata tables noted above (`metadata_jobs.profiling_context_id`, future `metadata_profiling_snapshots`).
 - `dq_profiling/engine/context_builder.py` is the single producer of profiling context IDs; metadata consumers can rely on those IDs to stitch cleansing jobs, profiling snapshots, and validation runs without rehydrating state from `dq_core`.
 - Profiling overrides captured in `ProfilingJob.overrides` flow through to `ProfilingSnapshot.overrides_applied`, ensuring metadata queries can explain why thresholds differed for a run.
+- Profiling snapshots store per-field descriptive statistics (counts, min/max/mean/stddev), frequent values with percentages, and numeric/categorical distributions so metadata queries and evidence packs can surface richer insights about each attribute's behaviour.
+- `dq_profiling/report/profiling_report.py` converts raw profiling snapshots into summarized payloads (dict/CSV) that metadata services can persist alongside validation reports for auditors and dashboards.
 - Future profiling-specific endpoints will live under `dq_profiling/api`, simplifying lineage capture for proactive profiling runs that do not immediately lead to validation.
 
 ## 4. Architecture overview
