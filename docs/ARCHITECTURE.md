@@ -17,6 +17,52 @@
 - **Integrations (`dq_integration/`):** Adapters for Azure Blob Storage, Power Platform, and notifications. `azure_blob/external_triggers.py` is reserved for event/webhook/polling helpers once orchestration decisions are final.
 - **Security (`dq_security/`):** Handles Azure AD auth, RBAC middleware, secret management via Key Vault, and audit logging.
 
+### 2.1 Component relationships (Mermaid)
+
+```mermaid
+flowchart LR
+    subgraph External
+        AZAD[Azure AD]
+        AZBLOB[Azure Blob Storage]
+    end
+
+    API[dq_api — API Layer]
+    CLEANSING[dq_cleansing — Cleansing Engine]
+    PROFILING[dq_profiling — Profiling Module]
+    RULES[dq_core — Rule Engine]
+    CONFIG[dq_config — Configuration Management]
+    METADATA[dq_metadata — Metadata Layer]
+    INTEGRATIONS[dq_integration — Integrations]
+    SECURITY[dq_security — Security]
+
+    API -->|authN/RBAC| SECURITY
+    SECURITY -->|token validation| AZAD
+
+    API -->|submit jobs| CLEANSING
+    API -->|profile datasets| PROFILING
+    API -->|run validations| RULES
+    API -->|persist/query| METADATA
+
+    CLEANSING -->|cleansed dataset, metrics| PROFILING
+    CLEANSING -->|lineage & metrics| METADATA
+    CLEANSING -->|rule refs| CONFIG
+
+    PROFILING -->|context snapshots| RULES
+    PROFILING -->|metadata events| METADATA
+
+    RULES -->|validation results| METADATA
+    RULES -->|rule refs| CONFIG
+
+    CONFIG -->|versions| CLEANSING
+    CONFIG -->|versions| RULES
+
+    INTEGRATIONS -->|blob adapters| AZBLOB
+    API -->|trigger integrations| INTEGRATIONS
+
+    AZBLOB -->|datasets| CLEANSING
+    AZBLOB -->|datasets| PROFILING
+```
+
 ### 2.1 Cleansing engine interaction model
 
 - The **cleansing job manager** (`dq_api/services/cleansing_job_manager.py`) decides whether a job requires cleansing based on tenant policy, dataset type, or explicit upload flags, then invokes `dq_cleansing.engine.cleansing_engine.CleansingEngine`.

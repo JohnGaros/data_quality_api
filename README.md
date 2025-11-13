@@ -6,6 +6,53 @@
 - Keeps full audit history so governance and compliance teams have evidence when needed.
 - Designed to handle both direct file uploads and future externalised blob uploads (event, webhook, or polling trigger still pending a final decision).
 
+## High-level architecture
+The diagram below highlights how each core module collaborates, with descriptions of those modules in the section that follows.
+
+```mermaid
+flowchart LR
+    subgraph External
+        AZAD[Azure AD]
+        AZBLOB[Azure Blob Storage]
+    end
+
+    API[dq_api — API Layer]
+    CLEANSING[dq_cleansing — Cleansing Engine]
+    PROFILING[dq_profiling — Profiling Module]
+    RULES[dq_core — Rule Engine]
+    CONFIG[dq_config — Configuration Management]
+    METADATA[dq_metadata — Metadata Layer]
+    INTEGRATIONS[dq_integration — Integrations]
+    SECURITY[dq_security — Security]
+
+    API -->|authN/RBAC| SECURITY
+    SECURITY -->|token validation| AZAD
+
+    API -->|submit jobs| CLEANSING
+    API -->|profile datasets| PROFILING
+    API -->|run validations| RULES
+    API -->|persist/query| METADATA
+
+    CLEANSING -->|cleansed dataset, metrics| PROFILING
+    CLEANSING -->|lineage & metrics| METADATA
+    CLEANSING -->|rule refs| CONFIG
+
+    PROFILING -->|context snapshots| RULES
+    PROFILING -->|metadata events| METADATA
+
+    RULES -->|validation results| METADATA
+    RULES -->|rule refs| CONFIG
+
+    CONFIG -->|versions| CLEANSING
+    CONFIG -->|versions| RULES
+
+    INTEGRATIONS -->|blob adapters| AZBLOB
+    API -->|trigger integrations| INTEGRATIONS
+
+    AZBLOB -->|datasets| CLEANSING
+    AZBLOB -->|datasets| PROFILING
+```
+
 ## How the repo is organised
 - `docs/` — plain-language specs and guides for product, security, and operations.
 - `src/` — application code split into clear modules (API, rule engine, admin, metadata, etc.).
@@ -14,12 +61,16 @@
 - `tests/` — automated checks to prove the platform works as expected.
 - `scripts/` — helper scripts for local setup, data seeding, and maintenance.
 
-### dq_profiling module
-- `src/dq_profiling/models/` contains Pydantic models for profiling jobs, results, and per-field snapshots so profiling metadata stays consistent across the API and metadata layers.
-- `src/dq_profiling/engine/` hosts the `ProfilingEngine` that computes dataset statistics plus the `ProfilingContextBuilder` that converts snapshots into rule-engine-ready contexts.
-- `src/dq_profiling/api/` keeps placeholder routers for future profiling-specific endpoints (e.g., proactive profiling or reruns independent of validation).
-- `src/dq_profiling/report/` turns profiling results into human-readable/exportable summaries, including per-field stats (counts, min/max/mean/stddev), frequent values, and numeric/categorical distributions so APIs, UIs, and audits can present profiling metrics without rehydrating raw snapshots.
-- `dq_core.engine` uses these interfaces instead of rolling its own helpers, keeping profiling responsibilities encapsulated.
+
+### Key application modules
+- **`src/dq_api`** — FastAPI routers, dependency wiring, and orchestration logic for cleansing, profiling, validation, and metadata persistence.
+- **`src/dq_cleansing`** — Cleansing engine, rule definitions, and reporting helpers that normalise incoming data prior to validation.
+- **`src/dq_profiling`** — Profiling jobs, engine, and reporting utilities that compute dataset statistics and feed rule contexts.
+- **`src/dq_core`** — Rule engine, evaluator scaffolding, and models describing rules, configs, and logical fields.
+- **`src/dq_config`** — Configuration loaders, validators, and registries that supply versioned rule + mapping bundles.
+- **`src/dq_metadata`** — Catalog-ready metadata models, registry, and repository implementations for lineage, audit, and discovery.
+- **`src/dq_integration`** — Azure Blob adapters, notification channels, and Power Platform hooks for external workflows.
+- **`src/dq_security`** — Authentication providers, RBAC middleware, encryption utilities, and audit logging helpers.
 
 ## Who should read this
 - Product managers tracking scope and delivery.
