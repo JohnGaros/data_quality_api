@@ -8,3 +8,7 @@ from .models import (  # noqa: F401
     ComplianceTag,
 )
 from .registry import MetadataRegistry  # noqa: F401
+from .repository import (  # noqa: F401
+    FileMetadataRepository,
+    IMetadataRepository,
+)

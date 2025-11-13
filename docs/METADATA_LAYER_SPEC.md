@@ -32,7 +32,7 @@
 - Future profiling-specific endpoints will live under `dq_profiling/api`, simplifying lineage capture for proactive profiling runs that do not immediately lead to validation.
 
 ## 4. Architecture overview
-- **Metadata Registry (`dq_metadata.registry.MetadataRegistry`):** Central service exposing CRUD operations for metadata objects.
+- **Metadata Registry (`dq_metadata.registry.MetadataRegistry`):** Central service exposing CRUD operations for metadata objects. It now delegates persistence to repository implementations (`dq_metadata.repository.IMetadataRepository`). The default file-based repository is ideal for local development and can be swapped for database/cloud-backed repositories later.
 - **Event stream (`dq_metadata.events`):** Standardized events emitted by API, rule engine, and admin modules.
 - **Profiling context store (`dq_metadata.profiling` future):** Persists dataset profiling metrics and serves profiling-driven validation context lookups to the rule engine.
 - **Storage adapters (`dq_metadata.adapters` future):** Persistence into PostgreSQL tables, Azure Log Analytics, or data lake.
