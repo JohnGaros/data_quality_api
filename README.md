@@ -14,6 +14,12 @@
 - `tests/` — automated checks to prove the platform works as expected.
 - `scripts/` — helper scripts for local setup, data seeding, and maintenance.
 
+### dq_profiling module
+- `src/dq_profiling/models/` contains Pydantic models for profiling jobs, results, and per-field snapshots so profiling metadata stays consistent across the API and metadata layers.
+- `src/dq_profiling/engine/` hosts the `ProfilingEngine` that computes dataset statistics plus the `ProfilingContextBuilder` that converts snapshots into rule-engine-ready contexts.
+- `src/dq_profiling/api/` keeps placeholder routers for future profiling-specific endpoints (e.g., proactive profiling or reruns independent of validation).
+- `dq_core.engine` uses these interfaces instead of rolling its own helpers, keeping profiling responsibilities encapsulated.
+
 ## Who should read this
 - Product managers tracking scope and delivery.
 - Technical leads coordinating build tasks.

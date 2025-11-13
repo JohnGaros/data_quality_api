@@ -36,6 +36,12 @@ Diagram: `docs/diagrams/cleansing_job_flow.mmd`.
 
 Diagram: `docs/diagrams/cleansing_validation_chain.mmd`.
 
+### dq_profiling module role
+- `dq_profiling/engine/profiler.py` runs immediately after cleansing (or raw ingestion when cleansing is disabled) to build profiling snapshots tied to each job ID.
+- `dq_profiling/engine/context_builder.py` converts those snapshots plus any overrides into the profiling-driven validation context consumed by `dq_core.engine.RuleEngine`.
+- `dq_profiling/models/` emits structured job/result payloads so the metadata layer can link profiling context IDs with both cleansing and validation jobs.
+- Future REST handlers in `dq_profiling/api/` will expose submission/status endpoints should profiling need to be invoked independently from validation.
+
 ## 4. Upload, validate, and report
 1. **Uploader** submits files via API or UI; metadata layer records submission.
 2. **Job manager** stores the files, queues a validation job, assigns configuration version, and triggers dataset profiling.

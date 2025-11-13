@@ -31,6 +31,12 @@ Out of scope for now:
 8. Uploader must be able to download a detailed error report highlighting failed rows and rules.
 
 *Profiling-driven example:* If profiling shows a tenant's historical null rate for `PaymentAmount` stays below 2%, the profiling-driven validation context tightens the warning threshold to 3% for the next run so sudden spikes surface as soft alerts before hard failures occur. The same profiling logic applies whether the dataset arrived through direct upload or via an external blob reference.
+
+#### dq_profiling module scope
+- `dq_profiling/models/` defines profiling job payloads, job status enums, and profiling snapshots so API endpoints and metadata events stay consistent.
+- `dq_profiling/engine/profiler.py` turns cleansed datasets into profiling snapshots, while `context_builder.py` converts those snapshots plus overrides into validation-ready contexts.
+- `dq_profiling/api/` reserves routing hooks for independent profiling requests (e.g., proactive profiling without full validation).
+- `dq_core` components consume the profiling contexts exclusively through the dq_profiling interfaces to enforce separation of concerns.
 ### 4.2 Data cleansing orchestration (Uploader & Configurator focus)
 9. System must automatically cleanse incoming data before profiling and validation when policies require it, while letting tenants enable/disable specific cleansing pipelines per dataset type.
 10. Cleansing rules must be stored in a dedicated library with their own versioning, activation status, and approval workflow.

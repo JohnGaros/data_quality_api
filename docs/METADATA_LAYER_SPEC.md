@@ -23,6 +23,12 @@
 | **User and system actions** | Audit trail of administrator and configurator operations. | Tenant onboarding, role changes, reruns triggered, token issuance. |
 | **Compliance classifiers** | Labels for sensitive data and policy obligations. | PII flag, retention tier, regulatory tags (GDPR, SOX). |
 
+### dq_profiling linkage
+- `dq_profiling/models` emit strongly typed profiling job and snapshot records that map directly to the metadata tables noted above (`metadata_jobs.profiling_context_id`, future `metadata_profiling_snapshots`).
+- `dq_profiling/engine/context_builder.py` is the single producer of profiling context IDs; metadata consumers can rely on those IDs to stitch cleansing jobs, profiling snapshots, and validation runs without rehydrating state from `dq_core`.
+- Profiling overrides captured in `ProfilingJob.overrides` flow through to `ProfilingSnapshot.overrides_applied`, ensuring metadata queries can explain why thresholds differed for a run.
+- Future profiling-specific endpoints will live under `dq_profiling/api`, simplifying lineage capture for proactive profiling runs that do not immediately lead to validation.
+
 ## 4. Architecture overview
 - **Metadata Registry (`dq_metadata.registry.MetadataRegistry`):** Central service exposing CRUD operations for metadata objects.
 - **Event stream (`dq_metadata.events`):** Standardized events emitted by API, rule engine, and admin modules.
