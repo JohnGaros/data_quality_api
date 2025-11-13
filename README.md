@@ -1,4 +1,4 @@
-# Data Quality Assessment API (DQ API)
+# Data Quality Assessment Platform
 
 ## What this project is about
 - Central service that checks customer data files against shared business rules.
