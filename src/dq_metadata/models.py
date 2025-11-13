@@ -1,10 +1,25 @@
 """Pydantic models representing metadata entities captured for governance."""
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+
+class FieldMetadata(BaseModel):
+    """Describes a single field/column within a registered data asset."""
+
+    name: str = Field(..., description="Field name as presented to consumers.")
+    data_type: str = Field(..., description="Logical or physical data type (e.g., string, decimal).")
+    description: Optional[str] = Field(None, description="Human friendly description of the field.")
+
+
+class UsageStats(BaseModel):
+    """Tracks access statistics that power catalog popularity metrics."""
+
+    access_count: int = Field(0, description="Number of times this asset was accessed.")
+    last_accessed: Optional[datetime] = Field(None, description="Timestamp when the asset was last accessed.")
 
 
 class DataAssetMetadata(BaseModel):
@@ -12,11 +27,28 @@ class DataAssetMetadata(BaseModel):
 
     asset_id: UUID = Field(..., description="Unique identifier for the data asset.")
     tenant_id: str = Field(..., description="Tenant that owns the data asset.")
+    name: Optional[str] = Field(None, description="Friendly name for the dataset as displayed in the catalog.")
     dataset_type: str = Field(..., description="Canonical dataset category (billing, payments, etc.).")
     schema_signature: str = Field(..., description="Hash of logical field definitions for lineage.")
     classification: Optional[str] = Field(None, description="Compliance classifier (e.g., PII, confidential).")
     retention_policy_id: Optional[str] = Field(None, description="Reference to retention policy applied.")
     owner: Optional[str] = Field(None, description="Business owner or steward of the data asset.")
+    fields: List[FieldMetadata] = Field(default_factory=list, description="Field-level metadata for discovery.")
+    data_source: Optional[str] = Field(None, description="System of origin (e.g., Dynamics, SAP, custom feed).")
+    usage_stats: UsageStats = Field(default_factory=UsageStats, description="Usage/popularity metrics.")
+    custom_attributes: Dict[str, Any] = Field(default_factory=dict, description="Arbitrary catalog-ready attributes.")
+    parent_asset_ids: List[UUID] = Field(
+        default_factory=list,
+        description="Asset IDs that this asset derives from (parent datasets).",
+    )
+    child_asset_ids: List[UUID] = Field(
+        default_factory=list,
+        description="Asset IDs derived from this asset (child datasets).",
+    )
+    related_asset_ids: List[UUID] = Field(
+        default_factory=list,
+        description="Cross-asset lineage links (e.g., joins, references).",
+    )
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
