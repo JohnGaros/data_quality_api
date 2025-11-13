@@ -1,3 +1,5 @@
+"""Transformation primitives used by the cleansing engine."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,12 +18,16 @@ class TransformationError(RuntimeError):
 
 @dataclass
 class TransformationOutcome:
+    """Container describing the result of a transformation step."""
+
     dataset: Dataset
     metrics: Metrics
     rejected: Rejected
 
 
 def _standardize(dataset: Dataset, step: TransformationStep) -> TransformationOutcome:
+    """Upper/lower-case strings depending on the requested format."""
+
     format_hint = step.parameters.get("format", "").lower()
     updated: Dataset = []
     for row in dataset:
@@ -40,6 +46,8 @@ def _standardize(dataset: Dataset, step: TransformationStep) -> TransformationOu
 
 
 def _fill_missing(dataset: Dataset, step: TransformationStep) -> TransformationOutcome:
+    """Fill null/empty values or reject rows when no default is supplied."""
+
     default_value = step.parameters.get("default")
     rejected: Rejected = []
     updated: Dataset = []
@@ -65,6 +73,8 @@ def _fill_missing(dataset: Dataset, step: TransformationStep) -> TransformationO
 
 
 def _deduplicate(dataset: Dataset, step: TransformationStep) -> TransformationOutcome:
+    """Drop duplicate rows based on configured keys/fields."""
+
     keys = step.parameters.get("keys") or step.target_fields
     if not keys:
         raise TransformationError("deduplicate step requires keys or target_fields")
@@ -102,6 +112,7 @@ TRANSFORMATION_HANDLERS: Dict[str, Callable[[Dataset, TransformationStep], Trans
 
 def apply_transformation(dataset: Dataset, step: TransformationStep) -> TransformationOutcome:
     """Apply a single transformation step to a dataset."""
+
     handler = TRANSFORMATION_HANDLERS.get(step.type)
     if not handler:
         raise TransformationError(f"unsupported transformation type: {step.type}")

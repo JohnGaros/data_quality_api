@@ -1,3 +1,5 @@
+"""Unit tests covering profiling engine metrics and reporting."""
+
 import sys
 from pathlib import Path
 
@@ -11,6 +13,8 @@ from dq_profiling.report.profiling_report import profiling_report_from_result
 
 
 def build_job() -> ProfilingJob:
+    """Create a sample profiling job payload."""
+
     return ProfilingJob(
         job_id="profile-job-1",
         tenant_id="tenant-1",
@@ -18,7 +22,9 @@ def build_job() -> ProfilingJob:
     )
 
 
-def sample_dataset():
+def sample_dataset() -> list[dict[str, object]]:
+    """Return a small dataset for profiling."""
+
     return [
         {"Amount": 10, "Status": "PAID"},
         {"Amount": 20, "Status": "FAILED"},
@@ -27,7 +33,9 @@ def sample_dataset():
     ]
 
 
-def test_profiling_engine_computes_numeric_and_categorical_stats():
+def test_profiling_engine_computes_numeric_and_categorical_stats() -> None:
+    """Ensure profiling outputs include numeric and categorical metrics."""
+
     engine = ProfilingEngine(sample_size=2)
 
     result = engine.profile(build_job(), sample_dataset())
@@ -53,7 +61,9 @@ def test_profiling_engine_computes_numeric_and_categorical_stats():
     assert len(status_stats.distribution.values) == 2
 
 
-def test_profiling_report_surfaces_extended_metrics():
+def test_profiling_report_surfaces_extended_metrics() -> None:
+    """Validate the report surfaces derived stats and tabular rows."""
+
     engine = ProfilingEngine(sample_size=2)
     result = engine.profile(build_job(), sample_dataset())
 

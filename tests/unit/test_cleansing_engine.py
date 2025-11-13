@@ -1,3 +1,5 @@
+"""Unit tests for the cleansing engine and rule library."""
+
 import sys
 from pathlib import Path
 
@@ -5,7 +7,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[2] / "src"))
 
-from dq_cleansing import (
+from dq_cleansing import (  # noqa: E402
     CleansingEngine,
     CleansingJob,
     CleansingJobStatus,
@@ -13,10 +15,12 @@ from dq_cleansing import (
     CleansingRuleLibrary,
     TransformationStep,
 )
-from dq_cleansing.models.cleansing_job import CleansingJobResult
+from dq_cleansing.models.cleansing_job import CleansingJobResult  # noqa: E402
 
 
 def build_rule(version: str = "2024.06.01") -> CleansingRule:
+    """Create a representative cleansing rule for billing datasets."""
+
     return CleansingRule(
         rule_id="billing-standardise",
         name="Billing standardisation",
@@ -44,7 +48,9 @@ def build_rule(version: str = "2024.06.01") -> CleansingRule:
     )
 
 
-def sample_dataset():
+def sample_dataset() -> list[dict[str, object]]:
+    """Return a small dataset used in cleansing engine tests."""
+
     return [
         {"InvoiceNumber": "INV-001", "Currency": "usd", "CustomerId": "C001"},
         {"InvoiceNumber": "INV-002", "Currency": "eur", "CustomerId": None},
@@ -52,7 +58,9 @@ def sample_dataset():
     ]
 
 
-def test_engine_executes_transformations_in_order():
+def test_engine_executes_transformations_in_order() -> None:
+    """Ensure cleansing transformations run sequentially and emit metrics."""
+
     engine = CleansingEngine()
     job = CleansingJob(
         job_id="cln-job-1",
@@ -74,7 +82,9 @@ def test_engine_executes_transformations_in_order():
     assert result.metrics["deduplicate"]["deduplicated"] == 1
 
 
-def test_rule_library_returns_latest_version():
+def test_rule_library_returns_latest_version() -> None:
+    """Verify the rule library resolves the latest version when unspecified."""
+
     library = CleansingRuleLibrary()
     library.upsert(build_rule(version="2024.06.01"))
     library.upsert(build_rule(version="2024.07.01"))
@@ -88,7 +98,9 @@ def test_rule_library_returns_latest_version():
     assert specific.version == "2024.06.01"
 
 
-def test_engine_raises_for_unknown_transformation():
+def test_engine_raises_for_unknown_transformation() -> None:
+    """Ensure unsupported transformation types raise errors."""
+
     engine = CleansingEngine()
     job = CleansingJob(
         job_id="cln-job-2",

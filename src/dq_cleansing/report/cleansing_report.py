@@ -19,6 +19,8 @@ class CleansingReport:
 
     @classmethod
     def from_result(cls, result: CleansingJobResult) -> "CleansingReport":
+        """Build a report from a `CleansingJobResult` instance."""
+
         return cls(
             job_id=result.job_id,
             status=result.status.value,
@@ -29,6 +31,8 @@ class CleansingReport:
         )
 
     def to_dict(self) -> Dict[str, Any]:
+        """Return a serialisable representation for API responses."""
+
         return {
             "job_id": self.job_id,
             "status": self.status,

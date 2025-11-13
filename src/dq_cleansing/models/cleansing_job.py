@@ -49,7 +49,7 @@ class CleansingJobResult(BaseModel):
     metrics: Dict[str, Any] = Field(default_factory=dict)
 
     def to_report_dict(self) -> Dict[str, Any]:
-        """Flatten for API responses."""
+        """Return a flattened dictionary suited for API responses."""
         return {
             "job_id": self.job_id,
             "status": self.status.value,

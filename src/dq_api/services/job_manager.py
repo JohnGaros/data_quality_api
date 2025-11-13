@@ -1,3 +1,5 @@
+"""Validation job orchestration utilities."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,6 +12,8 @@ from .cleansing_job_manager import CleansingJobManager
 
 @dataclass
 class ValidationJobRequest:
+    """Envelope describing the work needed to run a validation job."""
+
     job_id: str
     tenant_id: str
     dataset_type: str
@@ -23,9 +27,13 @@ class JobManager:
     """Lightweight job manager that can chain cleansing before validation."""
 
     def __init__(self, cleansing_manager: Optional[CleansingJobManager] = None) -> None:
+        """Initialize the manager with an optional cleansing manager dependency."""
+
         self.cleansing_manager = cleansing_manager
 
     def execute(self, request: ValidationJobRequest) -> Dict[str, Any]:
+        """Run a validation job, optionally chaining a cleansing job beforehand."""
+
         dataset = list(request.dataset)
         cleansing_summary: Optional[Dict[str, Any]] = None
 
@@ -50,7 +58,6 @@ class JobManager:
             dataset = cleansed_dataset
 
         validation_summary = self._run_validation(dataset)
-
         return {
             "validation": validation_summary,
             "cleansing": cleansing_summary,
@@ -59,6 +66,7 @@ class JobManager:
     @staticmethod
     def _run_validation(dataset: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Placeholder validation execution that reports simple metrics."""
+
         record_count = len(dataset)
         return {
             "status": "succeeded",

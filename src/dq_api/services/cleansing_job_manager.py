@@ -1,3 +1,5 @@
+"""In-memory orchestration layer for cleansing jobs."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -29,9 +31,13 @@ class CleansingJobManager:
     # Rule operations -----------------------------------------------------------------
 
     def upsert_rule(self, rule: CleansingRule) -> None:
+        """Insert or update a cleansing rule in the backing library."""
+
         self.rule_library.upsert(rule)
 
     def list_rules(self, dataset_type: Optional[str] = None) -> Iterable[CleansingRule]:
+        """Return all rules, optionally filtered by dataset type."""
+
         return self.rule_library.list(dataset_type=dataset_type)
 
     def reset(self) -> None:
@@ -68,18 +74,28 @@ class CleansingJobManager:
     # Retrieval -----------------------------------------------------------------------
 
     def get_job(self, job_id: str) -> Optional[CleansingJob]:
+        """Return a previously submitted job, if available."""
+
         return self._jobs.get(job_id)
 
     def get_result(self, job_id: str) -> Optional[CleansingJobResult]:
+        """Return the result for a completed job."""
+
         return self._results.get(job_id)
 
     def list_job_results(self) -> Iterable[CleansingJobResult]:
+        """Iterate over all stored results."""
+
         return self._results.values()
 
     def get_output_dataset(self, job_id: str) -> Optional[List[Dict[str, Any]]]:
+        """Return the cleansed dataset for a job."""
+
         return self._outputs.get(job_id)
 
     def link_validation_job(self, job_id: str, validation_job_id: str) -> Optional[CleansingJobResult]:
+        """Persist the validation job id that consumed the cleansing output."""
+
         result = self._results.get(job_id)
         if not result:
             return None

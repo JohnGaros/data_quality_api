@@ -1,3 +1,5 @@
+"""Integration test covering the cleansing API router."""
+
 import sys
 from pathlib import Path
 
@@ -12,6 +14,8 @@ from src.dq_api.routes import cleansing
 
 
 def build_rule_payload() -> dict:
+    """Construct a cleansing rule payload used by the API tests."""
+
     rule = CleansingRule(
         rule_id="billing-standardise",
         name="Billing standardisation",
@@ -34,13 +38,17 @@ def build_rule_payload() -> dict:
 
 
 def create_client() -> TestClient:
+    """Create a FastAPI test client with the cleansing router registered."""
+
     cleansing.reset_state()
     app = FastAPI()
     app.include_router(cleansing.router)
     return TestClient(app)
 
 
-def test_cleansing_workflow_endpoints():
+def test_cleansing_workflow_endpoints() -> None:
+    """Exercise rule CRUD, job submission, chaining, and listing endpoints."""
+
     client = create_client()
 
     # Upsert rule

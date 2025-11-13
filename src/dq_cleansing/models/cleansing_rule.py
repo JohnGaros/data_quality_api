@@ -28,6 +28,7 @@ class TransformationStep(BaseModel):
 
     @validator("type")
     def _normalise_type(cls, value: str) -> str:
+        """Normalise and validate the transformation type."""
         value = value.strip().lower()
         if not value:
             raise ValueError("transformation type cannot be empty")
@@ -35,6 +36,7 @@ class TransformationStep(BaseModel):
 
     @validator("severity")
     def _validate_severity(cls, value: str) -> str:
+        """Ensure severity values conform to soft/hard semantics."""
         normalised = value.strip().lower()
         if normalised not in {"soft", "hard"}:
             raise ValueError("severity must be either 'soft' or 'hard'")
@@ -53,6 +55,7 @@ class CleansingRule(BaseModel):
 
     @validator("rule_id", "name", "dataset_type", "version")
     def _require_non_empty(cls, value: str) -> str:
+        """Guard against empty strings in critical identifiers."""
         if not value or not value.strip():
             raise ValueError("value cannot be empty")
         return value.strip()
