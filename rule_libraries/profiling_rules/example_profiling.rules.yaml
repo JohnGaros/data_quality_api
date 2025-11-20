@@ -1,0 +1,11 @@
+# Example profiling rule defined in YAML
+rule_id: billing-amount-null-threshold
+name: Amount null ratio should not exceed 2%
+dataset_type: billing
+field: Amount
+profile_metric: null_ratio
+comparison: "<="
+threshold: 0.02
+description: >
+  Flags datasets where the Amount field has too many nulls.
+active_from: 2024-06-01

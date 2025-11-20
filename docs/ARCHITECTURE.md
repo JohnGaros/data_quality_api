@@ -11,7 +11,8 @@
 - **API Layer (`dq_api/`):** Routes for uploads, validation status, configuration management, tenants, and admin tooling. Future `external_uploads` endpoint will accept blob references from external upload services.
 - **Cleansing Engine (`dq_cleansing/`):** Orchestrates optional-but-recommended cleansing pipelines that standardize formats, deduplicate records, resolve survivorship, and impute or quarantine missing values. The cleansing job manager stores the cleansed dataset plus rejection set so profiling and validation can operate on a normalized input without rereading the raw blob.
 - **Profiling Module (`dq_profiling/`):** Owns profiling job models, snapshot builders, and helpers that convert cleansing outputs into profiling-driven validation contexts. Provides a dedicated `ProfilingEngine`, context builder, and API placeholders so profiling can evolve independently from rule execution.
-- **Rule Engine (`dq_core/engine/`):** Builds profiling-driven validation contexts (via `dq_profiling`) before executing rules and emitting metadata events.
+- **Data Contract Layer (`dq_contracts/`):** Houses the first-class data contract models, YAML/JSON loaders, and registry/repository abstractions that synchronize multi-tenant contracts, dataset schemas, rule templates, and rule bindings into a Postgres-backed registry.
+- **Rule Engine (`dq_core/engine/`):** Builds profiling-driven validation contexts (via `dq_profiling`) before executing rules and emitting metadata events. When invoked for contract-driven jobs it pulls dataset contracts and binding definitions from `dq_contracts` instead of ad-hoc configs.
 - **Configuration Management (`dq_config/`):** Loads, validates, and versions rule libraries plus mapping templates.
 - **Metadata Layer (`dq_metadata/`):** Persists job lineage, profiling context snapshots, rule versions, and audit events. Provides querying interfaces used by dashboards and compliance exports.
 - **Integrations (`dq_integration/`):** Adapters for Azure Blob Storage, Power Platform, and notifications. `azure_blob/external_triggers.py` is reserved for event/webhook/polling helpers once orchestration decisions are final.
@@ -30,6 +31,7 @@ flowchart LR
     CLEANSING[dq_cleansing — Cleansing Engine]
     PROFILING[dq_profiling — Profiling Module]
     RULES[dq_core — Rule Engine]
+    CONTRACTS[dq_contracts — Data Contracts]
     CONFIG[dq_config — Configuration Management]
     METADATA[dq_metadata — Metadata Layer]
     INTEGRATIONS[dq_integration — Integrations]
@@ -41,20 +43,28 @@ flowchart LR
     API -->|submit jobs| CLEANSING
     API -->|profile datasets| PROFILING
     API -->|run validations| RULES
+    API -->|manage contracts| CONTRACTS
     API -->|persist/query| METADATA
+    API -->|manage configs| CONFIG
 
     CLEANSING -->|cleansed dataset, metrics| PROFILING
     CLEANSING -->|lineage & metrics| METADATA
+    CLEANSING -->|rule bindings| CONTRACTS
     CLEANSING -->|rule refs| CONFIG
 
     PROFILING -->|context snapshots| RULES
     PROFILING -->|metadata events| METADATA
 
     RULES -->|validation results| METADATA
+    RULES -->|contract lineage| CONTRACTS
     RULES -->|rule refs| CONFIG
 
-    CONFIG -->|versions| CLEANSING
-    CONFIG -->|versions| RULES
+    CONTRACTS -->|active contracts| CLEANSING
+    CONTRACTS -->|dataset schemas| PROFILING
+    CONTRACTS -->|rule sets| RULES
+    CONTRACTS -->|metadata| METADATA
+
+    CONFIG -->|template exports| CONTRACTS
 
     INTEGRATIONS -->|blob adapters| AZBLOB
     API -->|trigger integrations| INTEGRATIONS
@@ -81,6 +91,16 @@ flowchart LR
 
 Profiling outputs now include per-attribute statistics (row counts, distinct counts, null counts), descriptive metrics (min, max, mean, standard deviation where numeric), top-N frequent values with percentages, and distribution summaries (histograms for numeric data and full value counts for categorical data). These enriched metrics power adaptive validation thresholds, metadata insights, and reporting experiences.
 
+### 2.3 Data contract layer
+
+- **`dq_contracts/models.py`:** Defines `DataContract`, `DatasetContract`, `ColumnContract`, `RuleTemplate`, `RuleBinding`, and lifecycle metadata (status, approvals, promotions, schema registry references). Contracts are scoped by tenant and environment and expose helper methods for resolving dataset schemas, rule bindings, and rule template catalogs.
+- **`dq_contracts/loader.py` (planned):** Parses YAML/JSON contract files stored under `configs/contracts/`, validates references (logical fields, rule templates), normalizes IDs, and emits strongly typed contract models ready for persistence.
+- **`dq_contracts/registry.py`:** Coordinates persistence and retrieval of contracts, dataset contracts, rule templates, and rule bindings via the repository layer. Provides high-level methods for registering contracts, promoting versions across environments, enumerating dataset schemas, and supplying contract-aware rule bundles to the cleansing/validation engines.
+- **`dq_contracts/repository.py`:** Implements the storage abstraction (SQLAlchemy/Postgres) and is invoked by migration scripts under `scripts/migrations/` plus CLI utilities like `scripts/sync_contracts.py`.
+- **Integration points:** Job managers in `dq_api.services` query the ContractRegistry to determine which dataset contract/rule bindings apply to a validation or cleansing job. Engines consume the resolved dataset schema and compiled rule set, while `dq_metadata` receives explicit contract IDs, dataset contract IDs, and binding IDs for lineage.
+
+Contract-driven orchestration ensures that rules, schemas, and lifecycle metadata flow through a single source of truth rather than ad-hoc config bundles. It also enables bidirectional sync (filesystem ↔ API ↔ DB), environment promotion workflows, and future streaming integrations (schema registry subjects) described in `docs/CONTRACT_DRIVEN_ARCHITECTURE.md`.
+
 ## 3. Upload pathways
 
 - **Direct uploads (current):** Clients submit files via `/uploads`. Job manager stores raw files, triggers profiling, runs validations, and records results.
@@ -90,11 +110,12 @@ Profiling outputs now include per-attribute statistics (row counts, distinct cou
 ## 4. Data & control flow (summary)
 
 1. **Ingestion:** Either direct upload or external trigger registers a validation job.
-2. **Cleansing (policy-driven):** Cleansing engine removes duplicates, standardizes formats, enriches or quarantines missing values, and stages rejection sets. Output URIs and metrics are persisted so downstream steps can cite the exact cleansing version applied.
-3. **Profiling:** Workers analyse the cleansed dataset to produce metrics that drive dynamic thresholds. Profiling events record whether cleansing occurred plus key before/after deltas for audit.
-4. **Validation:** Rule engine executes all active rules inside the profiling-driven context, referencing cleansing outputs for lineage and optional remediation hints.
-5. **Reporting:** Results flow to report services for download/export and to notification channels, combining cleansing and validation summaries when both were executed.
-6. **Lineage:** Metadata registry links blob assets, cleansing rule versions, profiling context, validation outcomes, and notification events for every run.
+2. **Contract resolution:** Job manager queries `dq_contracts.ContractRegistry` (scoped by tenant/environment/dataset type) to determine the dataset contract, schema expectations, and rule bindings that must drive subsequent steps. Contract identifiers are stamped onto the job metadata to ensure lineage.
+3. **Cleansing (policy-driven):** Cleansing engine removes duplicates, standardizes formats, enriches or quarantines missing values, and stages rejection sets. Output URIs and metrics are persisted so downstream steps can cite the exact cleansing version applied.
+4. **Profiling:** Workers analyse the cleansed dataset to produce metrics that drive dynamic thresholds. Profiling events record whether cleansing occurred plus key before/after deltas for audit.
+5. **Validation:** Rule engine executes all active bindings supplied by the ContractRegistry inside the profiling-driven context, referencing cleansing outputs for lineage and optional remediation hints.
+6. **Reporting:** Results flow to report services for download/export and to notification channels, combining cleansing and validation summaries when both were executed.
+7. **Lineage:** Metadata registry links blob assets, cleansing rule versions, contract IDs, dataset contract IDs, profiling context, validation outcomes, and notification events for every run.
 
 Refer to workflow diagrams in `docs/diagrams/*.mmd` for sequence details
 

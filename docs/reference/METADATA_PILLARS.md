@@ -11,7 +11,7 @@
 
 ### Open quetsion
 
-Should src/\*/models section be adjusted/moved to the metadata layer?
+Should src/*/models section be adjusted/moved to the metadata layer?
 
 ## Output of Data Validation Process
 

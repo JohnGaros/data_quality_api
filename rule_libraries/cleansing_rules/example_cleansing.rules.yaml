@@ -1,0 +1,24 @@
+# Example cleansing rule defined in YAML
+rule_id: billing-standardise
+name: Billing standardisation
+dataset_type: billing
+version: 2024.06.01
+description: >
+  Normalises currency formatting, fills missing customer identifiers,
+  and deduplicates invoices before validation.
+active_from: 2024-06-01
+transformations:
+  - type: standardize
+    target_fields: ["Currency"]
+    parameters:
+      format: ISO-4217
+  - type: fill_missing
+    target_fields: ["CustomerId"]
+    parameters:
+      default: UNKNOWN
+    severity: soft
+  - type: deduplicate
+    target_fields: ["InvoiceNumber"]
+    parameters:
+      keys: ["InvoiceNumber"]
+    severity: hard

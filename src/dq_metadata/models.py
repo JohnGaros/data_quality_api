@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class FieldMetadata(BaseModel):
@@ -77,6 +77,10 @@ class RuleVersionMetadata(BaseModel):
 
     rule_version_id: UUID = Field(..., description="Unique identifier for the rule version.")
     rule_id: str = Field(..., description="Logical rule identifier.")
+    rule_type: str = Field(
+        default="validation",
+        description="Rule family (validation, profiling, cleansing).",
+    )
     expression_hash: str = Field(..., description="Hash of the rule expression for tamper checking.")
     severity: str = Field(..., description="Rule severity (hard, soft).")
     change_type: str = Field(..., description="Lifecycle event (create, update, retire).")
@@ -86,6 +90,15 @@ class RuleVersionMetadata(BaseModel):
     effective_from: datetime = Field(default_factory=datetime.utcnow)
     effective_to: Optional[datetime] = None
     notes: Optional[str] = Field(None, description="Justification or release notes for the change.")
+
+    @field_validator("rule_type")
+    def _normalise_rule_type(cls, value: str) -> str:
+        """Ensure rule_type follows supported families."""
+
+        normalised = value.strip().lower()
+        if normalised not in {"validation", "profiling", "cleansing"}:
+            raise ValueError("rule_type must be validation, profiling, or cleansing")
+        return normalised
 
 
 class AuditEventMetadata(BaseModel):

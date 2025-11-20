@@ -1,0 +1,46 @@
+flowchart LR
+    subgraph External
+        AZAD["Azure AD"]
+        AZBLOB["Azure Blob Storage"]
+    end
+
+    subgraph Contracts
+        RULELIB["rule_libraries<br>(validation/cleansing/profiling)"]
+        CONFIG["dq_config<br>(loaders & validators)"]
+        CONTRACTS["dq_contracts<br>(contract registry + bindings)"]
+    end
+
+    API["dq_api<br>(API layer)"]
+    CLEANSING["dq_cleansing<br>(cleansing engine)"]
+    PROFILING["dq_profiling<br>(profiling module)"]
+    RULES["dq_core<br>(validation engine)"]
+    METADATA["dq_metadata<br>(metadata & lineage)"]
+    INTEGRATIONS["dq_integration<br>(integrations)"]
+    SECURITY["dq_security<br>(security & RBAC)"]
+
+    API -->|authN/RBAC| SECURITY
+    SECURITY -->|token validation| AZAD
+
+    RULELIB --> CONFIG --> CONTRACTS
+    CONTRACTS --> API
+    CONTRACTS --> CLEANSING
+    CONTRACTS --> PROFILING
+    CONTRACTS --> RULES
+
+    API -->|submit jobs| CLEANSING
+    API -->|profile datasets| PROFILING
+    API -->|run validations| RULES
+    API -->|persist/query| METADATA
+    API -->|trigger integrations| INTEGRATIONS
+
+    CLEANSING -->|cleansed dataset + metrics| PROFILING
+    CLEANSING -->|lineage & metrics| METADATA
+
+    PROFILING -->|context snapshots| RULES
+    PROFILING -->|metadata events| METADATA
+
+    RULES -->|validation results| METADATA
+
+    INTEGRATIONS -->|blob adapters| AZBLOB
+    AZBLOB -->|datasets| CLEANSING
+    AZBLOB -->|datasets| PROFILING

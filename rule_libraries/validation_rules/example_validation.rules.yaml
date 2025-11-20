@@ -1,0 +1,9 @@
+# Example validation rule defined in YAML
+rule_id: dq-billing-net-balance
+name: Net amount must equal gross minus tax
+dataset_type: billing
+expression: NetAmount == GrossAmount - TaxAmount
+severity: hard
+description: >
+  Prevents invoices where net totals drift from the gross/tax components.
+active_from: 2024-06-01

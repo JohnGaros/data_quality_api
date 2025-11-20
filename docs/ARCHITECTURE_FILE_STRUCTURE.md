@@ -54,7 +54,9 @@ data_quality_api/
 ```text
 src/
 ├── dq_core/           # Core rule engine and models
+├── dq_contracts/      # Data contract models and registry services
 ├── dq_cleansing/      # Data cleansing orchestration parallel to validation
+├── dq_profiling/      # Profiling engine, context builders, and reporting
 ├── dq_api/            # REST API layer (FastAPI)
 ├── dq_config/         # Rule and mapping configuration management
 ├── dq_admin/          # System and tenant administration
@@ -101,7 +103,35 @@ dq_core/
 
 ---
 
-### 4.2 `dq_cleansing/` — Data Cleansing Engine
+### 4.2 `dq_contracts/` — Data Contract Layer
+
+**Purpose:** Introduces explicit, versioned data contracts that bridge YAML definitions, database persistence, and runtime engines. The module centralizes schema definitions, rule template catalogs, and rule bindings so validation, cleansing, and profiling flows consume consistent metadata.
+
+```text
+dq_contracts/
+├── __init__.py
+├── models.py           # Pydantic models for contracts, datasets, columns, rule templates, bindings
+├── loader.py           # (planned) YAML/JSON loader that validates and normalizes contract files
+├── registry.py         # (planned) Service exposing CRUD/search/promotion workflows
+├── repository.py       # (planned) Postgres-backed persistence for contracts/templates/bindings
+└── serializers.py      # (planned) Helpers for JSON/YAML/DB round-trips
+```
+
+- **models.py:** Defines `DataContract`, `DatasetContract`, `ColumnContract`, `RuleTemplate`, and `RuleBinding` plus lifecycle metadata (status, promotions, approvals) and schema registry references.
+- **loader.py:** Will ingest YAML contracts from `configs/contracts/`, validate them (IDs, tenant/environment scope, rule references), and emit the strongly typed models.
+- **registry.py & repository.py:** Provide a tenant-aware contract registry backed by Postgres so contracts, datasets, columns, rule templates, and bindings can be versioned, promoted across environments, and queried by the API, engines, and metadata layer.
+- **serializers.py:** Converts between YAML/JSON payloads, runtime models, and persisted rows, enabling CLI sync scripts and API endpoints to round-trip contract definitions.
+
+**Relationship to other modules:**
+
+- Supplies dataset schemas and rule bindings to `dq_core` (validation engine) and `dq_cleansing` so engines no longer depend on ad-hoc configuration bundles from `dq_config`.
+- Emits lineage pointers for `dq_metadata` so validation and cleansing jobs record the contract ID, dataset contract version, and rule binding IDs that drove each run.
+- Powers new FastAPI surfaces under `/contracts`, `/datasets`, and `/rule-templates`, enforcing RBAC policies from `dq_security` and `dq_admin`.
+- Serves as the single source of truth for future streaming/schema registry integrations described in `docs/reference/DATA_CONTRACT_ARCHITECTURE.md`.
+
+---
+
+### 4.3 `dq_cleansing/` — Data Cleansing Engine
 
 **Purpose:** Hosts the cleansing rule governance model and execution engine that prepares datasets before validation runs.
 
@@ -134,7 +164,38 @@ dq_cleansing/
 
 ---
 
-### 4.3 `dq_api/` — REST API Layer
+### 4.4 `dq_profiling/` — Profiling Module
+
+**Purpose:** Produces profiling snapshots, statistics, and validation contexts derived from cleansed datasets so rule execution can adapt to real-world data behaviour.
+
+```text
+dq_profiling/
+├── models/
+│   ├── profiling_job.py
+│   ├── profiling_snapshot.py
+│   └── profiling_report.py
+├── engine/
+│   ├── profiler.py
+│   └── context_builder.py
+├── api/                # Placeholder for future profiling-specific endpoints
+└── report/
+    └── profiling_report.py
+```
+
+- **models/**: Defines strongly typed `ProfilingJob`, `ProfilingSnapshot`, and related payloads that describe metrics (counts, min/max/mean/stddev, null ratios, histograms, categorical distributions) plus overrides used during validation.
+- **engine/**: `ProfilingEngine` and `ProfilingContextBuilder` convert cleansed datasets into reusable profiling-driven validation contexts consumed by `dq_core`. This isolates statistical calculations from rule execution and allows orchestration services to reuse profiling results.
+- **api/**: Reserved router for future standalone profiling runs (e.g., proactive monitoring without validation).
+- **report/**: Exports profiling job results into JSON/CSV summaries for auditors, configurators, and downstream dashboards.
+
+**Relationship to other modules:**
+
+- `dq_cleansing` feeds cleansed datasets and rejection metrics into the profiling engine when cleansing is enabled; otherwise profiling works directly on raw uploads.
+- `dq_core.engine.RuleEngine` builds contexts exclusively through `dq_profiling.engine.context_builder.ProfilingContextBuilder`, ensuring consistent feature parity across validation jobs.
+- Metadata emitted from profiling runs (context IDs, overrides applied, metric deltas) flows through `dq_metadata` so each validation job can cite the exact statistical basis used for adaptive thresholds.
+
+---
+
+### 4.5 `dq_api/` — REST API Layer
 
 **Purpose:** Exposes core functionality through REST endpoints (FastAPI). Organized by user role and functional domain.
 
@@ -177,7 +238,7 @@ dq_api/
 
 ---
 
-### 4.4 `dq_config/` — Configuration Management
+### 4.6 `dq_config/` — Configuration Management
 
 **Purpose:** Manages parsing, validation, and versioning of configuration artifacts such as rule definitions and mappings.
 
@@ -196,7 +257,7 @@ dq_config/
 
 ---
 
-### 4.5 `dq_admin/` — Administrative Layer
+### 4.7 `dq_admin/` — Administrative Layer
 
 **Purpose:** Provides system-level management for users, tenants, roles, and audit trails.
 
@@ -215,7 +276,7 @@ dq_admin/
 
 ---
 
-### 4.6 `dq_metadata/` — Metadata & Governance Layer
+### 4.8 `dq_metadata/` — Metadata & Governance Layer
 
 **Purpose:** Centralizes governance metadata for datasets, validation jobs, rule versions, and audit events.
 
@@ -239,7 +300,7 @@ This layer underpins governance by supporting audit evidence, compliance tagging
 
 ---
 
-### 4.7 `dq_integration/` — External Integrations
+### 4.9 `dq_integration/` — External Integrations
 
 **Purpose:** Manages connectivity with external platforms, such as Azure Blob Storage and Microsoft Power Platform.
 
@@ -278,9 +339,9 @@ dq_integration/
 
 ---
 
-### 4.8 `dq_dsl/` — Domain-Specific Language (Future Enhancement)
+### 4.10 `dq_dsl/` — Domain-Specific Language (Future Enhancement)
 
-### 4.9 `dq_security/` — Enterprise Security Layer
+### 4.11 `dq_security/` — Enterprise Security Layer
 
 **Purpose:** Centralized module for identity, authorization, secret management, and audit logging — ensuring compliance with enterprise security requirements on Azure.
 
@@ -306,7 +367,7 @@ This layer is critical for ensuring Zero Trust compliance, multi-tenant isolatio
 
 ---
 
-### 4.10 `dq_tests/` — Testing Framework (Future)
+### 4.12 `dq_tests/` — Testing Framework (Future)
 
 **Purpose:** Automated regression testing for rules and configurations.
 
@@ -327,7 +388,7 @@ dq_tests/
 
 ---
 
-### 4.11 `main.py` — API Entrypoint
+### 4.13 `main.py` — API Entrypoint
 
 **Purpose:** Bootstraps the FastAPI app, loads configuration, and starts the API service.
 
@@ -350,15 +411,28 @@ configs/
 ├── example_dq_config.json
 ├── logging.yaml
 ├── settings.env
-├── dq_rules/
-└── cleansing_rules/
+└── external_upload.example.yaml
 ```
 
 - `example_dq_config.json`: Example configuration file following the DQConfig schema.
 - `logging.yaml`: Logging configuration (used by API and engine).
 - `settings.env`: Environment variables for local development.
-- `dq_rules/`: Folder for versioned data quality rule libraries or FDR exports.
-- `cleansing_rules/`: Parallel library for cleansing templates; versioned independently and governed by cleansing approvals.
+- `external_upload.example.yaml`: placeholder settings showing how to point at event sources, webhook URLs, or polling intervals once a decoupled upload orchestrator is selected.
+
+### `rule_libraries/`
+
+Holds versioned rule templates by family.
+
+```text
+rule_libraries/
+├── validation_rules/
+├── profiling_rules/
+└── cleansing_rules/
+```
+
+- `validation_rules/`: Validation rule templates (YAML/JSON/Excel).
+- `profiling_rules/`: Profiling expectations (YAML/JSON/Excel).
+- `cleansing_rules/`: Cleansing templates; versioned independently and governed by cleansing approvals.
 
 ---
 

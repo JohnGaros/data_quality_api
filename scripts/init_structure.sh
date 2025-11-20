@@ -13,7 +13,7 @@ set -e
 
 # --- Core directories --------------------------------------------------------
 mkdir -p src/{dq_core/{models,engine,report},dq_api/{routes,services},dq_config,dq_admin,dq_integration/{azure_blob,power_platform,notifications},dq_dsl/{examples},dq_tests,test_data}
-mkdir -p configs/dq_rules
+mkdir -p rule_libraries/{validation_rules,profiling_rules,cleansing_rules}
 mkdir -p scripts
 mkdir -p infra/{k8s,ci_cd}
 mkdir -p docs
@@ -54,7 +54,7 @@ touch src/main.py
 
 # --- Configuration files -----------------------------------------------------
 touch configs/{example_dq_config.json,logging.yaml,settings.env}
-touch configs/dq_rules/.gitkeep
+touch rule_libraries/{validation_rules,profiling_rules,cleansing_rules}/.gitkeep
 
 # --- Scripts -----------------------------------------------------------------
 touch scripts/{run_local.sh,seed_demo_data.py,migrate_db.py}

@@ -53,6 +53,7 @@
 | POST | `/cleansing-jobs/{job_id}/chain-validation` | Trigger validation with cleansed output | Creates validation job referencing cleansing output; returns new `job_id`. |
 
 ### 4.3 Rule library management (Configurator scope)
+> Rule endpoints are segmented by rule family (validation, profiling, cleansing) so governance can manage promotions independently.
 | Method | Path | Purpose | Notes |
 | ------ | ---- | ------- | ----- |
 | GET | `/rules` | List rules with filters | Supports query params: `status`, `category`, `severity`, `tenant`. |
