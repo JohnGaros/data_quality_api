@@ -5,8 +5,7 @@ flowchart LR
     end
 
     subgraph Contracts
-        RULELIB["rule_libraries<br>(validation/cleansing/profiling)"]
-        CONFIG["dq_config<br>(loaders & validators)"]
+        RULELIB["rule_libraries<br>(validation/cleansing/profiling authoring)"]
         CONTRACTS["dq_contracts<br>(contract registry + bindings)"]
     end
 
@@ -21,7 +20,7 @@ flowchart LR
     API -->|authN/RBAC| SECURITY
     SECURITY -->|token validation| AZAD
 
-    RULELIB --> CONFIG --> CONTRACTS
+    RULELIB -->|templates| CONTRACTS
     CONTRACTS --> API
     CONTRACTS --> CLEANSING
     CONTRACTS --> PROFILING

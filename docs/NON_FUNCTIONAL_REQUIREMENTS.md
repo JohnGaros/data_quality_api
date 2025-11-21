@@ -54,7 +54,7 @@ Out of scope:
 24. Codebase must follow automated linting and testing gates before deployment.
 25. Infrastructure must support dev, test, and prod environments with configuration-as-code.
 26. Configuration changes must be version-controlled with rollback capability.
-27. Upgrades to rule templates or schema must be backwards compatible or flagged for migration steps.
+27. Upgrades to rule templates, data contracts, or schemas must be backwards compatible or explicitly flagged for migration steps and documented in contract lifecycle metadata.
 
 ### 3.8 Disaster recovery and business continuity
 28. Backups of configurations, rules, and reports must run at least daily and be stored in a separate region.
@@ -77,4 +77,3 @@ Out of scope:
 - Specific compliance audits required in each region.
 - Ownership model for 24/7 support and on-call rotations.
 - Whether retention defaults vary by customer tier.
-

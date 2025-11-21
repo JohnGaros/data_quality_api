@@ -1,4 +1,4 @@
-"""Utilities to load rule templates from disk (YAML, JSON, Excel)."""
+"""File-based rule loader for the authoring layer."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from dq_cleansing.models.cleansing_rule import CleansingRule
 from dq_contracts.models import RuleType
+from dq_contracts.serialization import to_canonical_json
 from dq_core.models.data_quality_rule import ProfilingRuleTemplate, ValidationRuleTemplate
 
 RuleModel = TypeVar("RuleModel", bound=BaseModel)
@@ -20,6 +21,11 @@ _MODEL_BY_RULE_TYPE: dict[RuleType, Type[BaseModel]] = {
     RuleType.CLEANSING: CleansingRule,
     RuleType.PROFILING: ProfilingRuleTemplate,
 }
+
+
+def canonical_json(rules: Union[BaseModel, Iterable[BaseModel]]) -> Union[dict[str, Any], List[dict[str, Any]]]:
+    """Produce canonical JSON dictionaries from rule models (for DB/API/exports)."""
+    return to_canonical_json(rules)
 
 
 def _ensure_list(raw: Any) -> List[Any]:
@@ -127,17 +133,6 @@ def load_rules_from_file(path: Union[str, Path], rule_type: Optional[Union[str, 
         return parse_excel_rules(path, model_cls)
 
     raise ValueError(f"Unsupported file extension for rule loading: {suffix}")
-
-
-def canonical_json(rules: Iterable[BaseModel]) -> List[dict[str, Any]]:
-    """Produce JSON-friendly dictionaries from rule models for storage or APIs."""
-    payloads: List[dict[str, Any]] = []
-    for rule in rules:
-        if hasattr(rule, "model_dump_json"):
-            payloads.append(json.loads(rule.model_dump_json()))
-        else:  # pragma: no cover - compatibility with older pydantic
-            payloads.append(json.loads(rule.json()))
-    return payloads
 
 
 def load_validation_rules(path: Union[str, Path]) -> List[ValidationRuleTemplate]:

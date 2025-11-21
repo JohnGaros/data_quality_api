@@ -41,7 +41,7 @@ data_quality_api/
 **Logic:**
 
 - `src/` is the core codebase — designed as a modular Python package.
-- `configs/` holds environment-specific configuration files (rule definitions, logging, etc.).
+- `configs/` holds environment-specific settings (logging, env vars, external upload config samples).
 - `scripts/` provides developer and deployment utilities.
 - `infra/` contains all infrastructure-related manifests (containers, pipelines, etc.).
 - `docs/` houses architectural documentation and developer guides.
@@ -58,7 +58,6 @@ src/
 ├── dq_cleansing/      # Data cleansing orchestration parallel to validation
 ├── dq_profiling/      # Profiling engine, context builders, and reporting
 ├── dq_api/            # REST API layer (FastAPI)
-├── dq_config/         # Rule and mapping configuration management
 ├── dq_admin/          # System and tenant administration
 ├── dq_metadata/       # Governance metadata layer
 ├── dq_integration/    # External integrations (Azure, Power Platform)
@@ -78,8 +77,7 @@ dq_core/
 │   ├── logical_field.py
 │   ├── field_mapping.py
 │   ├── data_quality_rule.py
-│   ├── customer_profile.py
-│   └── dq_config.py
+│   └── customer_profile.py
 ├── engine/
 │   ├── rule_engine.py
 │   ├── evaluator.py
@@ -105,7 +103,7 @@ dq_core/
 
 ### 4.2 `dq_contracts/` — Data Contract Layer
 
-**Purpose:** Introduces explicit, versioned data contracts that bridge YAML definitions, database persistence, and runtime engines. The module centralizes schema definitions, rule template catalogs, and rule bindings so validation, cleansing, and profiling flows consume consistent metadata.
+**Purpose:** Introduces explicit, versioned data contracts that bridge YAML definitions, database persistence, and runtime engines. The module centralizes schema definitions, rule template catalogs, and rule bindings so validation, cleansing, and profiling flows consume consistent metadata. It is the **registry layer**; file/YAML authoring lives in `rule_libraries/`, which hands canonical JSON into this module for persistence and APIs.
 
 ```text
 dq_contracts/
@@ -121,10 +119,11 @@ dq_contracts/
 - **loader.py:** Will ingest YAML contracts from `configs/contracts/`, validate them (IDs, tenant/environment scope, rule references), and emit the strongly typed models.
 - **registry.py & repository.py:** Provide a tenant-aware contract registry backed by Postgres so contracts, datasets, columns, rule templates, and bindings can be versioned, promoted across environments, and queried by the API, engines, and metadata layer.
 - **serializers.py:** Converts between YAML/JSON payloads, runtime models, and persisted rows, enabling CLI sync scripts and API endpoints to round-trip contract definitions.
+- **Canonical JSON:** `dq_contracts.serialization.to_canonical_json` is the single path used to persist models to Postgres JSONB, expose them via APIs, and feed engines/metadata exports—independent of the authoring format.
 
 **Relationship to other modules:**
 
-- Supplies dataset schemas and rule bindings to `dq_core` (validation engine) and `dq_cleansing` so engines no longer depend on ad-hoc configuration bundles from `dq_config`.
+- Supplies dataset schemas and rule bindings to `dq_core` (validation engine) and `dq_cleansing` so engines no longer depend on ad-hoc configuration bundles.
 - Emits lineage pointers for `dq_metadata` so validation and cleansing jobs record the contract ID, dataset contract version, and rule binding IDs that drove each run.
 - Powers new FastAPI surfaces under `/contracts`, `/datasets`, and `/rule-templates`, enforcing RBAC policies from `dq_security` and `dq_admin`.
 - Serves as the single source of truth for future streaming/schema registry integrations described in `docs/reference/DATA_CONTRACT_ARCHITECTURE.md`.
@@ -238,26 +237,7 @@ dq_api/
 
 ---
 
-### 4.6 `dq_config/` — Configuration Management
-
-**Purpose:** Manages parsing, validation, and versioning of configuration artifacts such as rule definitions and mappings.
-
-```text
-dq_config/
-├── loader.py
-├── registry.py
-├── serializers.py
-└── validators.py
-```
-
-- **loader.py**: Parses Excel or JSON-based Functional Design Requirements (FDR) files into Python models.
-- **registry.py**: Central repository of active rules and configurations (supports versioning).
-- **serializers.py**: Converts Pydantic models to/from database or API formats.
-- **validators.py**: Checks rule consistency, duplicate IDs, and schema mismatches.
-
----
-
-### 4.7 `dq_admin/` — Administrative Layer
+### 4.6 `dq_admin/` — Administrative Layer
 
 **Purpose:** Provides system-level management for users, tenants, roles, and audit trails.
 
@@ -276,7 +256,7 @@ dq_admin/
 
 ---
 
-### 4.8 `dq_metadata/` — Metadata & Governance Layer
+### 4.7 `dq_metadata/` — Metadata & Governance Layer
 
 **Purpose:** Centralizes governance metadata for datasets, validation jobs, rule versions, and audit events.
 
@@ -300,7 +280,7 @@ This layer underpins governance by supporting audit evidence, compliance tagging
 
 ---
 
-### 4.9 `dq_integration/` — External Integrations
+### 4.8 `dq_integration/` — External Integrations
 
 **Purpose:** Manages connectivity with external platforms, such as Azure Blob Storage and Microsoft Power Platform.
 
@@ -339,9 +319,9 @@ dq_integration/
 
 ---
 
-### 4.10 `dq_dsl/` — Domain-Specific Language (Future Enhancement)
+### 4.9 `dq_dsl/` — Domain-Specific Language (Future Enhancement)
 
-### 4.11 `dq_security/` — Enterprise Security Layer
+### 4.10 `dq_security/` — Enterprise Security Layer
 
 **Purpose:** Centralized module for identity, authorization, secret management, and audit logging — ensuring compliance with enterprise security requirements on Azure.
 
@@ -367,7 +347,7 @@ This layer is critical for ensuring Zero Trust compliance, multi-tenant isolatio
 
 ---
 
-### 4.12 `dq_tests/` — Testing Framework (Future)
+### 4.11 `dq_tests/` — Testing Framework (Future)
 
 **Purpose:** Automated regression testing for rules and configurations.
 
@@ -388,7 +368,7 @@ dq_tests/
 
 ---
 
-### 4.13 `main.py` — API Entrypoint
+### 4.12 `main.py` — API Entrypoint
 
 **Purpose:** Bootstraps the FastAPI app, loads configuration, and starts the API service.
 
@@ -408,13 +388,11 @@ Holds environment-specific and rule-specific configuration files.
 
 ```text
 configs/
-├── example_dq_config.json
 ├── logging.yaml
 ├── settings.env
 └── external_upload.example.yaml
 ```
 
-- `example_dq_config.json`: Example configuration file following the DQConfig schema.
 - `logging.yaml`: Logging configuration (used by API and engine).
 - `settings.env`: Environment variables for local development.
 - `external_upload.example.yaml`: placeholder settings showing how to point at event sources, webhook URLs, or polling intervals once a decoupled upload orchestrator is selected.
@@ -433,6 +411,8 @@ rule_libraries/
 - `validation_rules/`: Validation rule templates (YAML/JSON/Excel).
 - `profiling_rules/`: Profiling expectations (YAML/JSON/Excel).
 - `cleansing_rules/`: Cleansing templates; versioned independently and governed by cleansing approvals.
+
+`rule_libraries` is the **authoring layer**: it owns file-based catalogs and loaders that parse YAML/JSON/Excel into Pydantic rule models. It performs linting/static checks and hands off canonical JSON to the registry layer.
 
 ---
 
@@ -550,7 +530,7 @@ tests/
 
 | Phase   | Focus                   | Relevant Directories                       |
 | ------- | ----------------------- | ------------------------------------------ |
-| Phase 1 | Core Engine + API       | dq_core/, dq_api/, dq_config/              |
+| Phase 1 | Core Engine + API       | dq_core/, dq_api/, rule_libraries/, dq_contracts/ |
 | Phase 2 | Admin, Reporting, RBAC  | dq_admin/, dq_security/                    |
 | Phase 3 | DSL & Testing           | dq_dsl/, dq_tests/                         |
 | Phase 4 | Cloud Integration       | dq_integration/azure_blob/, infra/azure/   |

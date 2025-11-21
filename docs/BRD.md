@@ -14,7 +14,7 @@
 
 ## 3. Scope
 ### 3.1 In scope
-- REST API for file uploads, cleansing jobs, validation jobs, reporting, configuration management, and metadata access.
+- REST API for file uploads, cleansing jobs, validation jobs, reporting, configuration/contract management, and metadata access.
 - Admin tooling for tenant management, RBAC, approvals, and retention settings.
 - Metadata layer that captures lineage, audit events, and compliance tags.
 - Documentation, test scaffolding, and deployment assets needed for launch.
@@ -43,7 +43,7 @@
 
 - Multi-tenant API that accepts Excel/CSV uploads, runs cleansing pipelines and validations via modular engines, and returns detailed reports.
 - Configurable rule libraries for cleansing and validation, based on logical fields that abstract tenant-specific schemas.
-- Metadata registry that documents every upload, cleansing job, validation job, rule version, and user action for governance.
+- Metadata registry (see `src/dq_metadata` and `docs/METADATA_LAYER_SPEC.md`) that documents every upload, cleansing job, validation job, rule version, and user action for governance.
 - Designed for Azure-native deployment with enterprise security (SSO, Key Vault, RBAC).
 
 - File intake, cleansing execution, validation execution, reporting, configuration lifecycle, and admin operations as detailed in `docs/FUNCTIONAL_REQUIREMENTS.md`.

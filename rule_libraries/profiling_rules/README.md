@@ -27,5 +27,5 @@ active_from: 2024-06-01
 
 ## Workflow
 1. Draft profiling expectations here.
-2. Load via `dq_config.loader.load_profiling_rules` (or `load_rules_from_file`, which infers the type from this folder).
+2. Load via `rule_libraries.loader.load_profiling_rules` (or `load_rules_from_file`, which infers the type from this folder).
 3. Profiling → Pydantic `ProfilingRuleTemplate` → canonical JSON → APIs / metadata / engines.

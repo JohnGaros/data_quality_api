@@ -19,8 +19,7 @@ graph LR
     end
 
     subgraph Contracts
-        RULELIB["rule_libraries<br>(validation/cleansing/profiling)"]
-        CONFIG["dq_config<br>(loaders & validators)"]
+        RULELIB["rule_libraries<br>(validation/cleansing/profiling authoring)"]
         CONTRACTS["dq_contracts<br>(contract registry + bindings)"]
     end
 
@@ -35,7 +34,7 @@ graph LR
     API -->|authN/RBAC| SECURITY
     SECURITY -->|token validation| AZAD
 
-    RULELIB --> CONFIG --> CONTRACTS
+    RULELIB -->|templates| CONTRACTS
     CONTRACTS --> API
     CONTRACTS --> CLEANSING
     CONTRACTS --> PROFILING
@@ -76,8 +75,7 @@ graph LR
 - **`src/dq_cleansing`** — Cleansing engine, rule definitions, and reporting helpers that normalise incoming data prior to validation.
 - **`src/dq_profiling`** — Profiling jobs, engine, and reporting utilities that compute dataset statistics and feed rule contexts.
 - **`src/dq_core`** — Rule engine, evaluator scaffolding, and models describing rules, configs, and logical fields.
-- **`src/dq_contracts`** — Data contract models, loaders, and registries that convert YAML definitions into database-backed schemas and rule bindings consumed by the engines.
-- **`src/dq_config`** — Configuration loaders, validators, and registries that supply versioned rule + mapping bundles.
+- **`src/dq_contracts`** — Data contract models and registry helpers that convert authoring inputs into database-backed schemas and rule bindings consumed by the engines.
 - **`src/dq_metadata`** — Catalog-ready metadata models, registry, and repository implementations for lineage, audit, and discovery.
 - **`src/dq_integration`** — Azure Blob adapters, notification channels, and Power Platform hooks for external workflows.
 - **`src/dq_security`** — Authentication providers, RBAC middleware, encryption utilities, and audit logging helpers.

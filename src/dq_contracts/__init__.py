@@ -21,6 +21,8 @@ from .models import (
     RuleType,
     SchemaRegistryRef,
 )
+from .registry import ContractRegistry
+from .serialization import to_canonical_json
 
 __all__ = [
     "ActivationWindow",
@@ -42,4 +44,6 @@ __all__ = [
     "RuleTemplate",
     "RuleType",
     "SchemaRegistryRef",
+    "ContractRegistry",
+    "to_canonical_json",
 ]

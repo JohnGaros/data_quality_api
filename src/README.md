@@ -7,7 +7,8 @@
 ## Module summary
 - `dq_api/`: REST endpoints and supporting services.
 - `dq_core/`: Validation engine, rule models, and reporting utilities.
-- `dq_config/`: Tools for loading and validating rule and mapping configurations.
+- `rule_libraries/`: Authoring layer for validation/profiling/cleansing rule templates authored in YAML/JSON/Excel.
+- `dq_contracts/`: Registry layer for contract and rule models persisted as canonical JSON.
 - `dq_admin/`: Tenant, user, and RBAC management helpers.
 - `dq_metadata/`: Governance metadata capture and lineage utilities.
 - `dq_integration/`: Connectors for Azure storage, Power Platform, and notifications.
@@ -19,4 +20,3 @@
 ## Guidance for non-technical readers
 - Skim package `README` files for more detail before diving into code.
 - Use this structure to plan which team or agent owns each workstream.
-

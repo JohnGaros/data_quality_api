@@ -284,7 +284,7 @@ class DataContract(BaseModel):
         default_factory=dict,
         description="Arbitrary metadata (lineage pointers, approval ticket, etc.).",
     )
-    lifecycle: ContractLifecycle = Field(default_factory=ContractLifecycle)
+    lifecycle: ContractLifecycle = Field(default_factory=lambda: ContractLifecycle())
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

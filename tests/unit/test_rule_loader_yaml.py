@@ -9,18 +9,19 @@ from pydantic import ValidationError
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT / "src"))
+sys.path.append(str(ROOT))
 
 from dq_cleansing.models.cleansing_rule import CleansingRule  # noqa: E402
-from dq_config.loader import (  # noqa: E402
+from dq_core.models.data_quality_rule import (  # noqa: E402
+    ProfilingRuleTemplate,
+    ValidationRuleTemplate,
+)
+from rule_libraries.loader import (  # noqa: E402
     canonical_json,
     load_cleansing_rules,
     load_profiling_rules,
     load_rules_from_file,
     load_validation_rules,
-)
-from dq_core.models.data_quality_rule import (  # noqa: E402
-    ProfilingRuleTemplate,
-    ValidationRuleTemplate,
 )
 
 

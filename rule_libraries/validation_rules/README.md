@@ -22,5 +22,5 @@ active_from: 2024-06-01
 
 ## Workflow
 1. Draft rules in this folder (`*.yaml` / `*.json` / `*.xlsx`).
-2. Load via `dq_config.loader.load_validation_rules` (or `load_rules_from_file`, which can infer rule type from this path).
+2. Load via `rule_libraries.loader.load_validation_rules` (or `load_rules_from_file`, which can infer rule type from this path).
 3. Validation → Pydantic `ValidationRuleTemplate` → canonical JSON → APIs / Postgres JSONB / engines.

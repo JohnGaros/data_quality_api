@@ -8,12 +8,12 @@
 
 ## 2. Core components
 
-- **API Layer (`dq_api/`):** Routes for uploads, validation status, configuration management, tenants, and admin tooling. Future `external_uploads` endpoint will accept blob references from external upload services.
+- **API Layer (`dq_api/`):** Routes for uploads, validation status, rule library/contract management, tenants, and admin tooling. Future `external_uploads` endpoint will accept blob references from external upload services.
 - **Cleansing Engine (`dq_cleansing/`):** Orchestrates optional-but-recommended cleansing pipelines that standardize formats, deduplicate records, resolve survivorship, and impute or quarantine missing values. The cleansing job manager stores the cleansed dataset plus rejection set so profiling and validation can operate on a normalized input without rereading the raw blob.
 - **Profiling Module (`dq_profiling/`):** Owns profiling job models, snapshot builders, and helpers that convert cleansing outputs into profiling-driven validation contexts. Provides a dedicated `ProfilingEngine`, context builder, and API placeholders so profiling can evolve independently from rule execution.
-- **Data Contract Layer (`dq_contracts/`):** Houses the first-class data contract models, YAML/JSON loaders, and registry/repository abstractions that synchronize multi-tenant contracts, dataset schemas, rule templates, and rule bindings into a Postgres-backed registry.
+- **Rule Libraries (`rule_libraries/`):** Authoring layer where validation/profiling/cleansing rule catalogs and mapping templates live in YAML/JSON/Excel; loaders validate structure and emit Pydantic models plus canonical JSON for downstream registry use.
+- **Data Contract Layer (`dq_contracts/`):** Registry layer that persists canonical contracts, datasets, rule templates, and bindings into Postgres (JSONB) and exposes them to engines and APIs.
 - **Rule Engine (`dq_core/engine/`):** Builds profiling-driven validation contexts (via `dq_profiling`) before executing rules and emitting metadata events. When invoked for contract-driven jobs it pulls dataset contracts and binding definitions from `dq_contracts` instead of ad-hoc configs.
-- **Configuration Management (`dq_config/`):** Loads, validates, and versions rule libraries plus mapping templates.
 - **Metadata Layer (`dq_metadata/`):** Persists job lineage, profiling context snapshots, rule versions, and audit events. Provides querying interfaces used by dashboards and compliance exports.
 - **Integrations (`dq_integration/`):** Adapters for Azure Blob Storage, Power Platform, and notifications. `azure_blob/external_triggers.py` is reserved for event/webhook/polling helpers once orchestration decisions are final.
 - **Security (`dq_security/`):** Handles Azure AD auth, RBAC middleware, secret management via Key Vault, and audit logging.
@@ -31,8 +31,8 @@ flowchart LR
     CLEANSING[dq_cleansing — Cleansing Engine]
     PROFILING[dq_profiling — Profiling Module]
     RULES[dq_core — Rule Engine]
-    CONTRACTS[dq_contracts — Data Contracts]
-    CONFIG[dq_config — Configuration Management]
+    CONTRACTS[dq_contracts — Registry]
+    RULELIBS[rule_libraries — Rule Libraries]
     METADATA[dq_metadata — Metadata Layer]
     INTEGRATIONS[dq_integration — Integrations]
     SECURITY[dq_security — Security]
@@ -44,27 +44,25 @@ flowchart LR
     API -->|profile datasets| PROFILING
     API -->|run validations| RULES
     API -->|manage contracts| CONTRACTS
+    API -->|manage rule libraries| RULELIBS
     API -->|persist/query| METADATA
-    API -->|manage configs| CONFIG
 
     CLEANSING -->|cleansed dataset, metrics| PROFILING
     CLEANSING -->|lineage & metrics| METADATA
     CLEANSING -->|rule bindings| CONTRACTS
-    CLEANSING -->|rule refs| CONFIG
 
     PROFILING -->|context snapshots| RULES
     PROFILING -->|metadata events| METADATA
 
     RULES -->|validation results| METADATA
     RULES -->|contract lineage| CONTRACTS
-    RULES -->|rule refs| CONFIG
 
-    CONTRACTS -->|active contracts| CLEANSING
+    CONTRACTS -->|active bindings| CLEANSING
     CONTRACTS -->|dataset schemas| PROFILING
     CONTRACTS -->|rule sets| RULES
     CONTRACTS -->|metadata| METADATA
 
-    CONFIG -->|template exports| CONTRACTS
+    RULELIBS -->|template exports| CONTRACTS
 
     INTEGRATIONS -->|blob adapters| AZBLOB
     API -->|trigger integrations| INTEGRATIONS
@@ -100,6 +98,8 @@ Profiling outputs now include per-attribute statistics (row counts, distinct cou
 - **Integration points:** Job managers in `dq_api.services` query the ContractRegistry to determine which dataset contract/rule bindings apply to a validation or cleansing job. Engines consume the resolved dataset schema and compiled rule set, while `dq_metadata` receives explicit contract IDs, dataset contract IDs, and binding IDs for lineage.
 
 Contract-driven orchestration ensures that rules, schemas, and lifecycle metadata flow through a single source of truth rather than ad-hoc config bundles. It also enables bidirectional sync (filesystem ↔ API ↔ DB), environment promotion workflows, and future streaming integrations (schema registry subjects) described in `docs/CONTRACT_DRIVEN_ARCHITECTURE.md`.
+
+**Canonical JSON guarantee:** Regardless of authoring format (YAML/JSON/Excel), all rule templates and contracts are normalised into canonical JSON via `dq_contracts.serialization.to_canonical_json` (or the mirrored helper in `rule_libraries.loader`) before being stored in Postgres JSONB columns, returned by APIs, or forwarded to engines/metadata exports.
 
 ## 3. Upload pathways
 

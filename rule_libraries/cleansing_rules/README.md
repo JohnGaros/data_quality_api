@@ -41,4 +41,4 @@ transformations:
     severity: hard
 ```
 
-Excel equivalents arrange each transformation in rows with columns such as `type`, `target_fields`, `parameters`, and `severity` so governance reviewers can comment inline before exporting to JSON for ingestion. Load via `dq_config.loader.load_cleansing_rules` or `load_rules_from_file` (type inferred from this folder).
+Excel equivalents arrange each transformation in rows with columns such as `type`, `target_fields`, `parameters`, and `severity` so governance reviewers can comment inline before exporting to JSON for ingestion. Load via `rule_libraries.loader.load_cleansing_rules` or `load_rules_from_file` (type inferred from this folder).
