@@ -2,10 +2,11 @@
 
 ## What this project is about
 
-- Central service that checks customer data files against shared business rules.
-- Supports multiple customers (tenants) with different file layouts.
-- Keeps full audit history so governance and compliance teams have evidence when needed.
-- Designed to handle both direct file uploads and future externalised blob uploads (event, webhook, or polling trigger still pending a final decision).
+- Central service that checks customer datasets against shared, contract-backed business rules instead of ad‑hoc spreadsheets or scripts.
+- Uses explicit **data contracts** as the agreed interface between data producers and consumers, so structure, expectations, and governance are all encoded in one place.
+- Supports multiple customers (tenants) with different source schemas while mapping them into a shared **semantic data catalogue** (Customer, Account, Transaction, etc.).
+- Keeps full audit history so governance and compliance teams can prove which contracts, rules, and policies were in force for any run.
+- Designed for both direct file uploads and future externalised blob uploads (event, webhook, or polling trigger still pending a final decision), with contracts driving validation, profiling, and downstream workflows.
 
 ## High-level architecture
 
@@ -18,31 +19,49 @@ graph LR
         AZBLOB["Azure Blob Storage"]
     end
 
-    subgraph Contracts
-        RULELIB["rule_libraries<br>(validation/cleansing/profiling authoring)"]
-        CONTRACTS["dq_contracts<br>(contract registry + bindings)"]
+    subgraph Authoring
+        RULELIB["rule_libraries<br/>validation / cleansing / profiling"]
+        SCHEMALIB["schema_libraries<br/>canonical schemas & taxonomies"]
+        INFRALIB["infra_libraries<br/>storage / compute / retention"]
+        GOVLIB["governance_libraries<br/>PII / retention / access policies"]
     end
 
-    API["dq_api<br>(API layer)"]
-    CLEANSING["dq_cleansing<br>(cleansing engine)"]
-    PROFILING["dq_profiling<br>(profiling module)"]
-    RULES["dq_core<br>(validation engine)"]
-    METADATA["dq_metadata<br>(metadata & lineage)"]
-    INTEGRATIONS["dq_integration<br>(integrations)"]
-    SECURITY["dq_security<br>(security & RBAC)"]
+    subgraph Semantic
+        CATALOG["dq_catalog<br/>entities & attributes"]
+    end
 
-    API -->|authN/RBAC| SECURITY
+    subgraph Registry
+        CONTRACTS["dq_contracts<br/>data contracts + bindings"]
+    end
+
+    subgraph Platform
+        API["dq_api<br/>API layer"]
+        CLEANSING["dq_cleansing<br/>cleansing engine"]
+        PROFILING["dq_profiling<br/>profiling module"]
+        RULES["dq_core<br/>validation engine"]
+        METADATA["dq_metadata<br/>metadata & lineage"]
+        INTEGRATIONS["dq_integration<br/>integrations"]
+        SECURITY["dq_security<br/>security & RBAC"]
+    end
+
+    API -->|authN / RBAC| SECURITY
     SECURITY -->|token validation| AZAD
 
-    RULELIB -->|templates| CONTRACTS
-    CONTRACTS --> API
-    CONTRACTS --> CLEANSING
-    CONTRACTS --> PROFILING
-    CONTRACTS --> RULES
+    RULELIB -->|rule templates| CONTRACTS
+    SCHEMALIB -->|schema templates| CONTRACTS
+    INFRALIB -->|infra profiles| CONTRACTS
+    GOVLIB -->|governance profiles| CONTRACTS
+
+    CONTRACTS -->|catalog mappings| CATALOG
+    CONTRACTS -->|materialised contracts| API
+    CONTRACTS -->|rule sets + schemas| CLEANSING
+    CONTRACTS -->|rule sets + schemas| PROFILING
+    CONTRACTS -->|rule sets + schemas| RULES
 
     API -->|submit jobs| CLEANSING
     API -->|profile datasets| PROFILING
     API -->|run validations| RULES
+    API -->|query contracts & catalog| CONTRACTS
     API -->|persist/query| METADATA
     API -->|trigger integrations| INTEGRATIONS
 
