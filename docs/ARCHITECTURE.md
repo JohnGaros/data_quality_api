@@ -12,7 +12,9 @@
 - **Cleansing Engine (`dq_cleansing/`):** Orchestrates optional-but-recommended cleansing pipelines that standardize formats, deduplicate records, resolve survivorship, and impute or quarantine missing values. The cleansing job manager stores the cleansed dataset plus rejection set so profiling and validation can operate on a normalized input without rereading the raw blob.
 - **Profiling Module (`dq_profiling/`):** Owns profiling job models, snapshot builders, and helpers that convert cleansing outputs into profiling-driven validation contexts. Provides a dedicated `ProfilingEngine`, context builder, and API placeholders so profiling can evolve independently from rule execution.
 - **Rule Libraries (`rule_libraries/`):** Authoring layer where validation/profiling/cleansing rule catalogs and mapping templates live in YAML/JSON/Excel; loaders validate structure and emit Pydantic models plus canonical JSON for downstream registry use.
-- **Data Contract Layer (`dq_contracts/`):** Registry layer that persists canonical contracts, datasets, rule templates, and bindings into Postgres (JSONB) and exposes them to engines and APIs.
+- **Schema/Infra/Governance Libraries (`schema_libraries/`, `infra_libraries/`, `governance_libraries/`):** Authoring layers for reusable schemas/taxonomies, infra profiles (storage/compute/retention), and governance policies (PII classifications, retention/access). Each will mirror the rule library pattern: author in YAML/JSON/Excel, validate, emit canonical JSON.
+- **Data Catalog (`dq_catalog/`):** Semantic layer defining canonical entities/attributes and relationships. Contracts map producer-specific fields to these catalog attributes so rules/governance can be authored once and reused across feeds.
+- **Data Contract Layer (`dq_contracts/`):** Registry layer that persists canonical contracts, datasets, rule templates, bindings, and now references to schema/infra/governance profiles and catalog mappings into Postgres (JSONB), exposing materialized bundles to engines and APIs.
 - **Rule Engine (`dq_core/engine/`):** Builds profiling-driven validation contexts (via `dq_profiling`) before executing rules and emitting metadata events. When invoked for contract-driven jobs it pulls dataset contracts and binding definitions from `dq_contracts` instead of ad-hoc configs.
 - **Metadata Layer (`dq_metadata/`):** Persists job lineage, profiling context snapshots, rule versions, and audit events. Provides querying interfaces used by dashboards and compliance exports.
 - **Integrations (`dq_integration/`):** Adapters for Azure Blob Storage, Power Platform, and notifications. `azure_blob/external_triggers.py` is reserved for event/webhook/polling helpers once orchestration decisions are final.
@@ -33,6 +35,10 @@ flowchart LR
     RULES[dq_core — Rule Engine]
     CONTRACTS[dq_contracts — Registry]
     RULELIBS[rule_libraries — Rule Libraries]
+    SCHEMALIB[schema_libraries — Schema Library (authoring)]
+    INFRALIB[infra_libraries — Infra Library (authoring)]
+    GOVLIB[governance_libraries — Governance Library (authoring)]
+    CATALOG[dq_catalog — Data Catalog]
     METADATA[dq_metadata — Metadata Layer]
     INTEGRATIONS[dq_integration — Integrations]
     SECURITY[dq_security — Security]
@@ -63,6 +69,10 @@ flowchart LR
     CONTRACTS -->|metadata| METADATA
 
     RULELIBS -->|template exports| CONTRACTS
+    SCHEMALIB -->|schema templates| CONTRACTS
+    INFRALIB -->|infra profiles| CONTRACTS
+    GOVLIB -->|governance profiles| CONTRACTS
+    CONTRACTS -->|catalog mappings| CATALOG
 
     INTEGRATIONS -->|blob adapters| AZBLOB
     API -->|trigger integrations| INTEGRATIONS
@@ -100,6 +110,12 @@ Profiling outputs now include per-attribute statistics (row counts, distinct cou
 Contract-driven orchestration ensures that rules, schemas, and lifecycle metadata flow through a single source of truth rather than ad-hoc config bundles. It also enables bidirectional sync (filesystem ↔ API ↔ DB), environment promotion workflows, and future streaming integrations (schema registry subjects) described in `docs/CONTRACT_DRIVEN_ARCHITECTURE.md`.
 
 **Canonical JSON guarantee:** Regardless of authoring format (YAML/JSON/Excel), all rule templates and contracts are normalised into canonical JSON via `dq_contracts.serialization.to_canonical_json` (or the mirrored helper in `rule_libraries.loader`) before being stored in Postgres JSONB columns, returned by APIs, or forwarded to engines/metadata exports.
+
+### 2.4 Composed contracts (libraries + catalog)
+
+- **Orthogonal libraries:** Rules (`rule_libraries`), schemas (`schema_libraries`), infra profiles (`infra_libraries`), and governance profiles (`governance_libraries`) are authored separately and versioned independently. Each emits canonical JSON via library loaders.
+- **Semantic catalog:** `dq_catalog` defines canonical entities/attributes/relationships. Contracts map producer fields to catalog attributes so rules/governance authored at the catalog level can be reused across feeds.
+- **Contract composition:** `DataContract` holds references (`SchemaRef`, `RuleSetRef`, `InfraProfileRef`, `GovernanceProfileRef`) plus catalog mappings (`catalog_entity_id` on datasets, `catalog_attribute_id` on columns). At runtime the registry materialises a bundle with resolved schema/rules/infra/governance profiles and catalog mappings for engines and IaC to consume.
 
 ## 3. Upload pathways
 

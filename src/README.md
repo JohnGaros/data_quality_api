@@ -9,6 +9,7 @@
 - `dq_core/`: Validation engine, rule models, and reporting utilities.
 - `rule_libraries/`: Authoring layer for validation/profiling/cleansing rule templates authored in YAML/JSON/Excel.
 - `dq_contracts/`: Registry layer for contract and rule models persisted as canonical JSON.
+- `dq_catalog/`: Semantic catalog of entities/attributes that contracts map into.
 - `dq_admin/`: Tenant, user, and RBAC management helpers.
 - `dq_metadata/`: Governance metadata capture and lineage utilities.
 - `dq_integration/`: Connectors for Azure storage, Power Platform, and notifications.

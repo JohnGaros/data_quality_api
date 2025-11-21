@@ -71,6 +71,38 @@ class RuleTemplate(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class SchemaRef(BaseModel):
+    """Reference to a schema template stored in the schema library registry."""
+
+    schema_id: str = Field(..., description="Identifier for the schema template.")
+    version: str = Field(..., description="Schema template version.")
+    library: Optional[str] = Field(None, description="Optional library/catalog name for the schema.")
+
+
+class RuleSetRef(BaseModel):
+    """Reference to a reusable rule set (validation/cleansing/profiling) bundle."""
+
+    rule_set_id: str = Field(..., description="Identifier for the referenced rule set.")
+    version: str = Field(..., description="Rule set version.")
+    library: Optional[str] = Field(None, description="Optional library/catalog the rule set belongs to.")
+
+
+class InfraProfileRef(BaseModel):
+    """Reference to infrastructure profile with storage/compute/retention hints."""
+
+    profile_id: str = Field(..., description="Identifier for the infra profile.")
+    version: str = Field(..., description="Profile version.")
+    library: Optional[str] = Field(None, description="Optional library/catalog the profile belongs to.")
+
+
+class GovernanceProfileRef(BaseModel):
+    """Reference to governance profile with classifications, retention, and access rules."""
+
+    profile_id: str = Field(..., description="Identifier for the governance profile.")
+    version: str = Field(..., description="Profile version.")
+    library: Optional[str] = Field(None, description="Optional library/catalog the profile belongs to.")
+
+
 class ActivationWindow(BaseModel):
     """Timeboxed activation for a rule binding."""
 
@@ -165,6 +197,9 @@ class ColumnContract(BaseModel):
     default_value: Optional[ParameterValue] = Field(None, description="Optional default value for missing data.")
     format: Optional[str] = Field(None, description="Format hint (ISO-8601, currency, etc.).")
     constraints: ColumnConstraint = Field(default_factory=ColumnConstraint)
+    catalog_attribute_id: Optional[str] = Field(
+        None, description="Semantic catalog attribute this column maps to (e.g., Customer.email)."
+    )
     profiling_expectations: List[ProfilingExpectation] = Field(
         default_factory=list,
         description="Profiling thresholds tied to this column.",
@@ -198,6 +233,9 @@ class DatasetContract(BaseModel):
     environment: Environment = Field(..., description="Environment where the dataset contract is active.")
     version: str = Field(..., description="Dataset contract version.")
     description: Optional[str] = Field(None, description="Purpose of the dataset.")
+    catalog_entity_id: Optional[str] = Field(
+        None, description="Semantic catalog entity this dataset maps to (e.g., Customer, Account)."
+    )
     owner: Optional[str] = Field(None, description="Business owner or steward.")
     columns: List[ColumnContract] = Field(default_factory=list, description="Ordered column definitions.")
     primary_keys: List[str] = Field(default_factory=list, description="Column IDs that compose the primary key.")
@@ -279,6 +317,18 @@ class DataContract(BaseModel):
     rule_bindings: List[RuleBinding] = Field(
         default_factory=list,
         description="Bindings linking rule templates to dataset/column scopes.",
+    )
+    schema_ref: Optional[SchemaRef] = Field(
+        None, description="Reference to a reusable schema template for this contract (schema library)."
+    )
+    rule_set_ref: Optional[RuleSetRef] = Field(
+        None, description="Reference to a reusable rule set for this contract (rule library)."
+    )
+    infra_profile_ref: Optional[InfraProfileRef] = Field(
+        None, description="Optional infra profile reference (storage/compute/retention)."
+    )
+    governance_profile_ref: Optional[GovernanceProfileRef] = Field(
+        None, description="Optional governance profile reference (classification, retention, access)."
     )
     metadata: Dict[str, Any] = Field(
         default_factory=dict,

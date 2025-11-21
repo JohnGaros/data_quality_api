@@ -27,6 +27,10 @@ It describes what each directory and file is for, how they interact, and how the
 data_quality_api/
 ├── src/                # Application source code
 ├── configs/            # Configuration files and rule libraries
+├── rule_libraries/     # Rule authoring (validation/profiling/cleansing)
+├── schema_libraries/   # Schema/taxonomy authoring
+├── infra_libraries/    # Infrastructure profile authoring
+├── governance_libraries/ # Governance policy authoring
 ├── scripts/            # Utility scripts (run, seed, migrate)
 ├── infra/              # Deployment, containers, CI/CD
 ├── docs/               # Documentation (architecture, guides)
@@ -60,6 +64,7 @@ src/
 ├── dq_api/            # REST API layer (FastAPI)
 ├── dq_admin/          # System and tenant administration
 ├── dq_metadata/       # Governance metadata layer
+├── dq_catalog/        # Semantic data catalog (entities/attributes)
 ├── dq_integration/    # External integrations (Azure, Power Platform)
 ├── dq_security/       # Enterprise security and authorization
 ├── dq_dsl/            # Rule DSL (future)
@@ -280,7 +285,24 @@ This layer underpins governance by supporting audit evidence, compliance tagging
 
 ---
 
-### 4.8 `dq_integration/` — External Integrations
+### 4.8 `dq_catalog/` — Semantic Data Catalog
+
+**Purpose:** Defines canonical entities/attributes/relationships that producer feeds map into so rules/governance can be authored once and reused across tenants.
+
+```text
+dq_catalog/
+├── models.py       # CatalogEntity, CatalogAttribute, CatalogRelationship
+├── repository.py   # (planned) Postgres-backed persistence
+├── api.py          # (planned) Read-only catalog queries
+└── loader.py       # (planned) YAML/JSON authoring for catalog entries
+```
+
+- Contracts reference catalog entity/attribute IDs on datasets/columns to align producer schemas to the semantic model.
+- Future registry and API layers will expose catalog lookups to UIs and engines.
+
+---
+
+### 4.9 `dq_integration/` — External Integrations
 
 **Purpose:** Manages connectivity with external platforms, such as Azure Blob Storage and Microsoft Power Platform.
 
@@ -413,6 +435,24 @@ rule_libraries/
 - `cleansing_rules/`: Cleansing templates; versioned independently and governed by cleansing approvals.
 
 `rule_libraries` is the **authoring layer**: it owns file-based catalogs and loaders that parse YAML/JSON/Excel into Pydantic rule models. It performs linting/static checks and hands off canonical JSON to the registry layer.
+
+---
+
+### `schema_libraries/`
+
+Author canonical schemas, taxonomies, and code lists in YAML/JSON/Excel. These templates are referenced by data contracts via `SchemaRef` and materialised in the registry.
+
+---
+
+### `infra_libraries/`
+
+Author reusable infrastructure/retention profiles (storage, compute, deployment hints) in YAML/JSON/Excel. Data contracts reference them with `InfraProfileRef`; registries persist canonical JSON for IaC pipelines.
+
+---
+
+### `governance_libraries/`
+
+Author governance policies (PII classifications, retention/access, legal tags) in YAML/JSON/Excel. Data contracts reference them with `GovernanceProfileRef`; registries persist canonical JSON for enforcement/audit.
 
 ---
 
