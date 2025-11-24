@@ -50,10 +50,10 @@
 - Backup integrity tests and disaster recovery drills executed at least annually.
 
 ## 9. Compliance considerations
-- Metadata layer produces evidence packs (audit reports, lineage, approvals) on demand.
-- Retention policies configurable per tenant; deletion workflows logged with justification.
+- Metadata layer produces evidence packs (audit reports, lineage, approvals) on demand, including GDPR-relevant information (lawful basis, classification tags, audit events tied to data subject requests and breach response).
+- Retention policies configurable per tenant; deletion workflows logged with justification and aligned to GDPR storage limitation and erasure requirements.
 - Aligns with corporate baselines (SOC 2, GDPR) — gaps tracked in `docs/STAKEHOLDER_DECISIONS.md`.
-- Document data processing agreements and privacy impact assessments where applicable.
+- Document data processing agreements and privacy impact assessments where applicable; ensure GDPR Article 30 records of processing activities can be derived from contracts and metadata.
 
 ## 10. Open items
 - Finalise security runbook details (incident response contacts, SLA for breach notifications).

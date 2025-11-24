@@ -24,6 +24,7 @@ graph LR
         SCHEMALIB["schema_libraries<br/>canonical schemas & taxonomies"]
         INFRALIB["infra_libraries<br/>storage / compute / retention"]
         GOVLIB["governance_libraries<br/>PII / retention / access policies"]
+        ACTIONLIB["action_libraries<br/>post-job behaviours"]
     end
 
     subgraph Semantic
@@ -32,6 +33,8 @@ graph LR
 
     subgraph Registry
         CONTRACTS["dq_contracts<br/>data contracts + bindings"]
+        ACTIONS["dq_actions<br/>action profiles"]
+        JOBS["dq_jobs<br/>job definitions"]
     end
 
     subgraph Platform
@@ -51,12 +54,17 @@ graph LR
     SCHEMALIB -->|schema templates| CONTRACTS
     INFRALIB -->|infra profiles| CONTRACTS
     GOVLIB -->|governance profiles| CONTRACTS
+    ACTIONLIB -->|action profiles| ACTIONS
 
     CONTRACTS -->|catalog mappings| CATALOG
     CONTRACTS -->|materialised contracts| API
     CONTRACTS -->|rule sets + schemas| CLEANSING
     CONTRACTS -->|rule sets + schemas| PROFILING
     CONTRACTS -->|rule sets + schemas| RULES
+
+    API -->|resolve job defs| JOBS
+    JOBS -->|contract refs| CONTRACTS
+    JOBS -->|action refs| ACTIONS
 
     API -->|submit jobs| CLEANSING
     API -->|profile datasets| PROFILING
@@ -73,6 +81,7 @@ graph LR
 
     RULES -->|validation results| METADATA
 
+    ACTIONS -->|post-job actions| INTEGRATIONS
     INTEGRATIONS -->|blob adapters| AZBLOB
     AZBLOB -->|datasets| CLEANSING
     AZBLOB -->|datasets| PROFILING
@@ -83,7 +92,11 @@ graph LR
 - `docs/` — plain-language specs and guides for product, security, and operations.
 - `src/` — application code split into clear modules (API, rule engine, admin, metadata, etc.).
 - `configs/` — sample configuration files and environment settings.
-- `rule_libraries/` — versioned rule templates (validation, cleansing, profiling) managed as part of the contract layer.
+- `rule_libraries/` — versioned validation/cleansing/profiling rule templates authored in YAML/JSON/Excel.
+- `schema_libraries/` — authoring source for canonical schemas, taxonomies, and code lists used by contracts.
+- `infra_libraries/` — declarative infra profiles covering storage/compute/retention expectations per dataset.
+- `governance_libraries/` — governance policies (PII classifications, retention/access) referenced from contracts.
+- `action_libraries/` — reusable post-job ActionProfiles (notifications, lineage events, webhooks, ticketing).
 - `infra/` — deployment assets for Azure, Kubernetes, and CI/CD pipelines.
 - `tests/` — automated checks to prove the platform works as expected.
 - `scripts/` — helper scripts for local setup, data seeding, and maintenance.
@@ -94,10 +107,19 @@ graph LR
 - **`src/dq_cleansing`** — Cleansing engine, rule definitions, and reporting helpers that normalise incoming data prior to validation.
 - **`src/dq_profiling`** — Profiling jobs, engine, and reporting utilities that compute dataset statistics and feed rule contexts.
 - **`src/dq_core`** — Rule engine, evaluator scaffolding, and models describing rules, configs, and logical fields.
-- **`src/dq_contracts`** — Data contract models and registry helpers that convert authoring inputs into database-backed schemas and rule bindings consumed by the engines.
-- **`src/dq_metadata`** — Catalog-ready metadata models, registry, and repository implementations for lineage, audit, and discovery.
-- **`src/dq_integration`** — Azure Blob adapters, notification channels, and Power Platform hooks for external workflows.
+- **`src/dq_contracts`** — Data contract models and registry helpers that convert authoring inputs into database-backed schemas, rule bindings, infra/gov profile references, and catalog mappings consumed by the engines.
+- **`src/dq_catalog`** — Semantic catalog entities/attributes/relationships that contracts map into so rules and governance policies can be defined once and reused.
+- **`src/dq_metadata`** — Catalog-ready metadata models, registry, and repository implementations for lineage, audit, evidence packs, and action/job tracing.
+- **`src/dq_integration`** — Azure Blob adapters, notification channels, Power Platform hooks, and action executors for post-job side effects.
 - **`src/dq_security`** — Authentication providers, RBAC middleware, encryption utilities, and audit logging helpers.
+- **`src/dq_actions`** *(planned)* — Runtime registry for ActionProfiles authored in `action_libraries/`.
+- **`src/dq_jobs`** *(planned)* — JobDefinition registry describing how to run contract-backed jobs and which actions to execute afterwards.
+
+### Actions & Job Definitions
+
+- **Action Library:** Author post-job behaviours (notification, lineage, webhook, ticketing, storage export, etc.) in `action_libraries/`. They are validated by loaders and persisted as canonical JSON via `src/dq_actions/`, so multiple JobDefinitions can reuse the same ActionProfiles with consistent parameters.
+- **JobDefinitions:** Describe how a tenant runs a DQ job using an existing `DataContract`. Each entry in `src/dq_jobs/` references the contract/dataset, declares the trigger (manual, scheduled, external event), and attaches ActionProfiles for success/failure/anomaly outcomes. External orchestrators call `/jobs/run/{job_definition_id}` with blob URIs or batch IDs; the platform resolves the contract, executes cleansing/profiling/validation, records metadata, and runs the configured actions.
+- **Learn more:** `docs/ACTIONS_AND_JOB_DEFINITIONS.md` contains canonical JSON examples, registry models, and a sequence diagram showing how ETL pipelines integrate with these resources.
 
 ## Contract-driven architecture in this project
 
@@ -142,6 +164,18 @@ This platform is built around **contract-driven architecture**: instead of scatt
   - Change control, rollback, and evidence packs are supported by combining contract lifecycle data with job and rule version metadata.
   - This gives compliance teams a clear view of “who changed what, when, and why” plus the ability to roll back to previously approved configurations if needed.
 
+## GDPR Compliance
+
+The platform is designed to help customers meet GDPR obligations by:
+
+- **Classification and tagging:** Governance profiles (`governance_libraries/`) and metadata compliance tags (`src/dq_metadata/models.py`) carry GDPR-specific fields such as classification (personal data vs. special category), lawful basis, and supported data subject rights.
+- **Lawful basis tracking:** Contracts and governance profiles can record the lawful basis for processing per dataset or attribute so that evidence of compliance is always attached to runs and exports.
+- **Data subject rights support:** Metadata and audit trails capture who accessed or changed what and when, enabling responses to access, rectification, erasure, restriction, portability, and objection requests.
+- **Retention and erasure:** Retention policies are configurable per tenant and enforced before deletion, with decisions logged for audit, aligning with GDPR storage limitation and erasure requirements.
+- **Breach and incident evidence:** Audit events and metadata exports provide the history needed to investigate incidents and support breach notifications.
+
+See `docs/SECURITY_GUIDE.md` and `docs/METADATA_LAYER_SPEC.md` for detailed security and metadata behaviors, and `docs/reference/DrivingDataQualityWithDataContracts.pdf` for a deeper discussion of contract-driven governance patterns.
+
 ## Who should read this
 
 - Product managers tracking scope and delivery.
@@ -154,3 +188,4 @@ This platform is built around **contract-driven architecture**: instead of scatt
 2. Review functional and non-functional requirements to understand what must be built.
 3. Follow the docs in `infra/` and `scripts/` when you are ready to run or deploy the service.
 4. If you are evaluating decoupled uploads, review `configs/external_upload.example.yaml` and the notes in `docs/ARCHITECTURE_FILE_STRUCTURE.md` for integration guidance.
+5. For orchestration and post-job behaviour, read `docs/ACTIONS_AND_JOB_DEFINITIONS.md` to understand ActionProfiles and JobDefinitions and how external pipelines should trigger them.

@@ -1,4 +1,4 @@
-# Functional Requirements — Data Quality Assessment API
+# Functional Requirements — Wemetrix Data Quality & Governance Platform
 
 ## 1. Why this document exists
 
@@ -6,10 +6,13 @@
 - Uses plain language so non-engineers and future agents can read it fast.
 - Links each requirement to the user roles described in the project brief.
 
+> **Related documents:** For business context see `docs/BRD.md`. For architecture and module structure see `docs/ARCHITECTURE.md` and `docs/ARCHITECTURE_FILE_STRUCTURE.md`. For contract-driven rationale see `docs/CONTRACT_DRIVEN_ARCHITECTURE.md`. For actions and job orchestration see `docs/ACTIONS_AND_JOB_DEFINITIONS.md`.
+
 ## 2. What is in scope
 
 - Features that let people upload data, validate it, review results, and manage rules.
-- Configuration, administration, and auditing tasks that keep the platform running.
+- Contract and catalogue operations that keep the platform’s ground truth (DataContracts, catalogue mappings, profiles) current.
+- Configuration, administration, and auditing tasks that keep the platform running in a multi-tenant, GDPR-aware environment.
 - Everything needed for day-one operations of the API and the supporting UI or scripts.
 
 Out of scope for now:
@@ -26,14 +29,14 @@ Out of scope for now:
 
 ### 4.1 File intake and validation (Uploader focus)
 
-1. System must accept Excel and CSV uploads via REST API and future UI, whether provided as direct file payloads or as immutable blob references supplied after an external upload completes.
-2. Uploader must see immediate confirmation that the file (or external reference) was received and queued.
-3. System must link each upload to the correct customer tenant and configuration version, regardless of the ingestion path.
-4. Validation engine must build a profiling-driven validation context using the upload's profiling snapshot, then run all active rules inside that context.
-5. System must store the original file securely for later review or reruns.
-6. Uploader must be able to poll or receive status updates (pending, running, completed, failed).
-7. When validation finishes, system must provide pass/fail outcome plus summary counts of issues and call out any profiling-driven threshold adjustments that influenced results.
-8. Uploader must be able to download a detailed error report highlighting failed rows and rules.
+1. The platform must accept Excel and CSV uploads via REST API and future UI, whether provided as direct file payloads or as immutable blob references supplied after an external upload completes (`/uploads`, `/jobs/run/{job_definition_id}`; see `docs/API_CONTRACTS.md`).
+2. The Uploader must see immediate confirmation that the file (or external reference) was received and queued.
+3. The platform must link each upload or triggered job to the correct customer tenant, environment, and DataContract/JobDefinition, regardless of the ingestion path.
+4. The validation engine must build a profiling-driven validation context using the upload's profiling snapshot, then run all active rules inside that context.
+5. The platform must store original files or immutable references securely for later review, reruns, or audit (with retention policies enforced per tenant).
+6. The Uploader must be able to poll or receive status updates (pending, running, completed, failed) for their jobs.
+7. When validation finishes, the platform must provide pass/fail outcome plus summary counts of issues and call out any profiling-driven threshold adjustments that influenced results.
+8. The Uploader must be able to download a detailed error report highlighting failed rows and rules, scoped by tenant and dataset/contract.
 
 _Profiling-driven example:_ If profiling shows a tenant's historical null rate for `PaymentAmount` stays below 2%, the profiling-driven validation context tightens the warning threshold to 3% for the next run so sudden spikes surface as soft alerts before hard failures occur. The same profiling logic applies whether the dataset arrived through direct upload or via an external blob reference.
 
@@ -47,63 +50,65 @@ _Profiling-driven example:_ If profiling shows a tenant's historical null rate f
 
 ### 4.2 Data cleansing orchestration (Uploader & Configurator focus)
 
-1. System must automatically cleanse incoming data before profiling and validation when policies require it, while letting tenants enable/disable specific cleansing pipelines per dataset type.
-2. Cleansing rules must be stored in a dedicated library with their own versioning, activation status, and approval workflow.
-3. Configurator must import or edit cleansing rule templates (Excel/JSON) through API endpoints parallel to validation rule management.
+1. The platform must automatically cleanse incoming data before profiling and validation when policies require it, while letting tenants enable/disable specific cleansing pipelines per dataset type (driven by contracts and JobDefinitions).
+2. Cleansing rules must be stored in the rule authoring layer (`rule_libraries/cleansing_rules`) with their own versioning, activation status, and approval workflow.
+3. The Configurator must import or edit cleansing rule templates (Excel/JSON/YAML) through API endpoints parallel to validation rule management.
 4. Cleansing jobs must support queueing, retry, and status polling semantics equivalent to validation jobs for Uploader visibility.
-5. When chaining is enabled, the job manager must automatically trigger validation using the cleansed dataset and link the resulting job IDs.
-6. System must persist cleansing outputs (transformed datasets, rejected records, execution metrics) so reports and downstream exports can access them.
-7. Configurator must run sandbox cleansing tests against sample datasets without impacting production tenants.
-8. Metadata and audit logs must capture cleansing job lineage, applied rule versions, and before/after metrics for SLA tracking.
+5. When chaining is enabled, the job manager must automatically trigger validation using the cleansed dataset and link the resulting job IDs in metadata.
+6. The platform must persist cleansing outputs (transformed datasets, rejected records, execution metrics) so reports, evidence packs, and downstream exports can access them.
+7. The Configurator must run sandbox cleansing tests against sample datasets without impacting production tenants.
+8. Metadata and audit logs must capture cleansing job lineage, applied rule versions, and before/after metrics for SLA tracking (see `docs/METADATA_LAYER_SPEC.md`).
 
 ### 4.3 Rule, contract, and configuration management (Configurator focus)
 
-1. Configurator must be able to view the active rule library across validation, profiling, and cleansing families (sourced from `rule_libraries/`), including rule name, category, severity, and status.
-2. Configurator must upload or edit rule definitions using structured templates (Excel/JSON/YAML) through API endpoints and persist them as contract-aware rule templates.
-3. System must validate new configurations or contract changes before activation (missing fields, duplicate IDs, invalid expressions or bindings).
-4. Configurator must manage logical fields and dataset schemas via data contracts, mapping them to customer-specific columns or calculated formulas.
-5. System must track versions of rules, logical fields, mappings, and data contracts with timestamps and authorship.
-6. Configurator must test new configurations or contract revisions in a sandbox tenant/environment before requesting promotion.
-7. System must support soft rules (warnings) and hard rules (blocking) with clear labels in results.
-8. Configurator must request approval for production promotion; system logs approval decisions and ties them to contract lifecycle metadata.
+1. The Configurator must be able to view the active rule library across validation, profiling, and cleansing families (sourced from `rule_libraries/`), including rule name, category, severity, and status.
+2. The Configurator must upload or edit rule definitions using structured templates (Excel/JSON/YAML) through API endpoints and persist them as contract-aware rule templates in the registry layer (`src/dq_contracts`).
+3. The platform must validate new configurations or contract changes before activation (missing fields, duplicate IDs, invalid expressions or bindings).
+4. The Configurator must manage logical fields and dataset schemas via DataContracts, mapping them to customer-specific columns or calculated formulas, while referencing canonical schemas from `schema_libraries/` and entities/attributes from `dq_catalog`.
+5. The platform must track versions of rules, logical fields, mappings, profiles, and DataContracts with timestamps and authorship, and expose that history via metadata and audit endpoints.
+6. The Configurator must test new configurations or contract revisions in a sandbox tenant/environment before requesting promotion.
+7. The platform must support soft rules (warnings) and hard rules (blocking) with clear labels in results.
+8. The Configurator must request approval for production promotion; the platform must log approval decisions and tie them to contract lifecycle metadata and governance policies.
 
 ### 4.4 Administration and tenant operations (Admin focus)
 
-1. Admin must create, update, suspend, or delete customer tenants.
-2. System must support multi-tenant isolation for data, rules, and logs.
-3. Admin must manage user accounts, roles, and API tokens with expiration dates.
-4. System must expose metrics on validation throughput, cleansing throughput, success rates, and queue health.
-5. Admin must configure storage retention policies for uploads, cleansed outputs, reports, and audit logs.
-6. System must provide audit trails of key actions (uploads, cleansing runs, rule changes, approvals, admin actions).
-7. Admin must trigger revalidation of prior uploads when configurations change, with traceable links.
-8. System must integrate with enterprise authentication (e.g., Azure AD) for SSO where available.
+1. The Admin must create, update, suspend, or delete customer tenants.
+2. The platform must support multi-tenant isolation for data, rules, logs, and metadata.
+3. The Admin must manage user accounts, roles, and API tokens with expiration dates.
+4. The platform must expose metrics on validation throughput, cleansing throughput, success rates, and queue health.
+5. The Admin must configure storage retention policies for uploads, cleansed outputs, reports, and audit logs, consistent with governance profiles and GDPR requirements.
+6. The platform must provide audit trails of key actions (uploads, cleansing runs, rule changes, approvals, admin actions) via `dq_metadata` and `dq_security` components.
+7. The Admin must be able to trigger revalidation of prior uploads when configurations or contracts change, with traceable links in metadata.
+8. The platform must integrate with enterprise authentication (e.g., Azure AD) for SSO where available.
 
 ### 4.5 Reporting and downstream access (All roles)
 
-1. System must allow users to fetch validation and cleansing reports via API filtered by date, tenant, or status.
-2. Reports must include per-rule statistics, affected records, and total counts for both cleansing and validation phases.
-3. System must offer export formats (JSON, CSV) for downstream tools.
-4. System must notify relevant users (email/webhook) when critical cleansing or validation failures occur, with opt-in control.
+1. The platform must allow users to fetch validation, cleansing, and profiling reports via API filtered by date, tenant, status, dataset/contract, and job definition where relevant.
+2. Reports must include per-rule statistics, affected records, and total counts for both cleansing and validation phases, and must indicate which catalogue attributes and governance profiles were in force.
+3. The platform must offer export formats (JSON, CSV) for downstream tools and evidence packs.
+4. The platform must notify relevant users (via configured ActionProfiles: email/webhook/Teams/Slack) when critical cleansing or validation failures occur, with opt-in control at tenant/JobDefinition level.
 
 ### 4.6 Platform-wide requirements
 
-1. Every requirement above must be accessible through documented REST endpoints.
-2. Operations must be scriptable for automation (CLI or service accounts).
-3. System must guard against duplicate uploads by using idempotent job identifiers.
-4. System must handle batch uploads, processing each file separately but under a single job reference.
-5. System must log and surface cleansing and validation errors when rule execution fails (e.g., malformed expressions).
-6. Metadata layer must capture lineage for every cleansing and validation job, including source assets, rule versions, and generated reports.
-7. Metadata endpoints must allow authorized users to query audit trails, compliance tags, and evidence packs on demand.
+1. Every requirement above must be accessible through documented REST endpoints, CLI tooling, or workflows as described in `docs/API_CONTRACTS.md`.
+2. Operations must be scriptable for automation (CLI or service accounts), including contract registration, rule/library sync, JobDefinition management, and ActionProfile management.
+3. The platform must guard against duplicate uploads or job submissions by using idempotent job identifiers and checksums.
+4. The platform must handle batch uploads, processing each file separately but under a single job or correlation reference.
+5. The platform must log and surface cleansing and validation errors when rule execution fails (e.g., malformed expressions) and must provide actionable diagnostics for Configurators and Admins.
+6. The metadata layer must capture lineage for every cleansing and validation job, including source assets, rule versions, governance/infra profiles, JobDefinitions, ActionProfiles, and generated reports.
+7. Metadata endpoints must allow authorized users to query audit trails, compliance tags (including GDPR fields), and evidence packs on demand.
 
 ## 5. Acceptance checkpoints
 
-- We can demonstrate a sample tenant setup, rule load, and file validation end-to-end.
-- Each role has at least one happy path and one exception path covered by automated tests.
-- Documentation and API references reflect all required endpoints and parameters.
+- We can demonstrate a sample tenant setup, contract registration (including catalogue mappings and governance/infra profiles), rule load from `rule_libraries/`, and file validation end-to-end.
+- We can demonstrate at least one end-to-end JobDefinition run that uses an ActionProfile to send notifications and record action outcomes in metadata.
+- Each role has at least one happy path and one exception path covered by automated tests (Uploader, Configurator, Admin, Governance/Audit).
+- Documentation and API references reflect all required endpoints and parameters, including contract, catalogue, JobDefinition, and ActionProfile operations.
 
 ## 6. Open questions to resolve later
 
 - Exact SLA targets for validation turnaround times.
 - Whether upload notifications are synchronous (webhook) or asynchronous (email queue).
 - How fine-grained the approval workflow needs to be (single approver vs. multi-step).
-- Retention timelines for historical reports vs. raw uploads.
+- Retention timelines for historical reports vs. raw uploads and how they align with per-tenant governance/GDPR requirements.
+- Precise boundaries between external orchestrators and platform job managers for scheduling and triggering JobDefinitions.

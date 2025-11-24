@@ -3,7 +3,7 @@
 ## 1. Purpose
 
 - Provide a consistent way to capture, store, and query metadata across uploads, rules, and user actions.
-- Satisfy governance requirements (data catalog, lineage, retention), audit obligations, and compliance reporting.
+- Satisfy governance requirements (data catalog, lineage, retention), audit obligations, and compliance reporting **including GDPR**.
 - Offer a lightweight interface for future agents to plug metadata into monitoring, reporting, and external GRC systems.
 
 ## 2. Goals and principles
@@ -24,7 +24,7 @@
 | **Profiling context snapshots** | Captures the profiling-driven validation context used during each job.                    | Profiling context ID, profiled_at timestamp, metric overrides per logical field.                                                                                       |
 | **Rule and config versions**    | Captures change history for validation rules, cleansing rules, mappings, and approvals.   | Rule ID, expression hash, severity, approver, activation window, cleansing transformation definitions.                                                                 |
 | **User and system actions**     | Audit trail of administrator and configurator operations.                                 | Tenant onboarding, role changes, reruns triggered, token issuance.                                                                                                     |
-| **Compliance classifiers**      | Labels for sensitive data and policy obligations.                                         | PII flag, retention tier, regulatory tags (GDPR, SOX).                                                                                                                 |
+| **Compliance classifiers**      | Labels for sensitive data and policy obligations, including GDPR.                        | PII flag, retention tier, regulatory tags (GDPR, SOX), lawful basis, special category flags, supported data subject rights.                                           |
 
 ### dq_profiling linkage
 
@@ -72,7 +72,7 @@
 - **`metadata_audit_events`**
   - `event_id`, `actor_id`, `actor_role`, `action_type`, `resource_type`, `resource_id`, `context`, `ip_address`, `initiated_at`, `is_privileged`.
 - **`metadata_compliance_tags`**
-  - `tag_id`, `resource_type`, `resource_id`, `tag_key`, `tag_value`, `source`, `assigned_at`.
+  - `tag_id`, `resource_type`, `resource_id`, `tag_key`, `tag_value`, `source`, `assigned_by`, `assigned_at`, `gdpr_classification`, `lawful_basis`, `data_subject_rights` (array), `is_special_category`.
 
 ### 5.2 Derived views
 
@@ -92,12 +92,12 @@
 ## 7. Governance and compliance behaviors
 
 - **Immutable history:** Audit, cleansing, and validation rule version entries are append-only; updates create new versions.
-- **Retention enforcement:** Before deleting raw data or cleansed outputs, metadata layer verifies retention policy and logs decision.
-- **PII guarding:** Sensitive tags trigger encryption and access controls; queries require elevated scope.
+- **Retention enforcement:** Before deleting raw data or cleansed outputs, metadata layer verifies retention policy and logs decision, ensuring compliance with GDPR storage limitation and erasure obligations.
+- **PII/GDPR guarding:** Sensitive tags (PII and GDPR-specific classifications) trigger encryption and access controls; queries require elevated scope and must respect data subject rights (access, rectification, erasure, restriction, portability, objection).
 - **Approval workflows:** Metadata ties approvals to validation and cleansing rule entries; missing approvals block promotion.
 - **Profiling transparency:** Each cleansing and validation job stores the profiling-driven context so teams can trace why thresholds shifted for a given run.
 - **External source traceability:** Every externally uploaded file is linked to its blob URI, ETag, and trigger metadata so operational teams can audit the hand-off between services.
-- **Evidence collection:** Scheduled exports produce compliance packs (JSON/CSV) for auditors, including cleansing metrics.
+- **Evidence collection:** Scheduled exports produce compliance packs (JSON/CSV) for auditors, including cleansing metrics and GDPR-related evidence (lawful basis, tags, and audit events relevant to data subject requests and breach investigations).
 
 ## 8. Operational requirements
 

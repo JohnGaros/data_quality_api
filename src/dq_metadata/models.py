@@ -117,7 +117,7 @@ class AuditEventMetadata(BaseModel):
 
 
 class ComplianceTag(BaseModel):
-    """Label applied to resources for compliance classification."""
+    """Label applied to resources for compliance classification, including GDPR context."""
 
     tag_id: UUID = Field(..., description="Unique identifier for the tag.")
     resource_type: str = Field(..., description="Type of resource tagged (asset, job, report).")
@@ -127,3 +127,19 @@ class ComplianceTag(BaseModel):
     source: str = Field(..., description="How the tag was assigned (manual, detection_rule).")
     assigned_by: Optional[str] = Field(None, description="Actor or service assigning the tag.")
     assigned_at: datetime = Field(default_factory=datetime.utcnow)
+    gdpr_classification: Optional[str] = Field(
+        None,
+        description="GDPR-related classification (e.g., personal_data, special_category, anonymous).",
+    )
+    lawful_basis: Optional[str] = Field(
+        None,
+        description="Lawful basis for processing under GDPR (e.g., consent, contract, legal_obligation).",
+    )
+    data_subject_rights: List[str] = Field(
+        default_factory=list,
+        description="Supported data subject rights for this resource (e.g., access, rectification, erasure, restriction, portability, objection).",
+    )
+    is_special_category: bool = Field(
+        False,
+        description="Whether the tagged data is considered special category data under GDPR.",
+    )
