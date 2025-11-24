@@ -1,4 +1,4 @@
-# Data Quality Assessment Platform
+# Wemetrix Data Quality & Governance Platform
 
 ## What this project is about
 

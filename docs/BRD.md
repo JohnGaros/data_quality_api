@@ -1,21 +1,22 @@
-# Business Requirements Document — Data Quality Assessment API
+# Business Requirements Document — Wemetrix Data Quality & Governance Platform
 
 ## 1. Executive summary
-- Build an enterprise-ready API service that cleanses and validates customer datasets against centralized business rules.
-- Provide consistent, auditable data-quality outcomes across multiple tenants with minimal manual oversight.
-- Enable configuration teams and admins to manage rules, mappings, and compliance metadata without developer intervention.
+- Build an enterprise-ready, multi-tenant platform that uses explicit data contracts and a semantic data catalogue to cleanse and validate customer datasets against centralized business rules.
+- Provide consistent, auditable data-quality and governance outcomes across multiple tenants with minimal manual oversight.
+- Enable data/contract/catalog stewards and admins to manage rule libraries, contracts, mappings, and governance metadata without developer intervention.
 
 ## 2. Business objectives
-1. Standardize how customer data cleansing and quality validation are measured and reported.
-2. Reduce turnaround time for onboarding new customers or schema changes.
+1. Standardize how customer data cleansing, quality validation, and governance are measured and reported using contract-driven, catalog-backed definitions.
+2. Reduce turnaround time for onboarding new customers or schema changes by reusing contract templates, rule libraries, and catalog mappings instead of one-off configurations.
 3. Deliver transparent audit trails and compliance evidence for regulators and internal governance teams.
-4. Support future workflow automation and analytics integrations without major rework.
-5. Provide a governed cleansing rules framework that can evolve independently from validation rules.
+4. Support future workflow automation and analytics integrations without major rework by exposing contracts, catalog, and metadata through stable APIs.
+5. Provide governed rule libraries and cleansing frameworks that can evolve independently from individual feeds, tenants, or infrastructure profiles.
 
 ## 3. Scope
 ### 3.1 In scope
-- REST API for file uploads, cleansing jobs, validation jobs, reporting, configuration/contract management, and metadata access.
+- REST API for file uploads, cleansing jobs, validation jobs, reporting, contract and catalog management, and metadata access.
 - Admin tooling for tenant management, RBAC, approvals, and retention settings.
+- Contract registry and semantic catalogue integration that capture how producer-specific feeds map into canonical entities/attributes.
 - Metadata layer that captures lineage, audit events, and compliance tags.
 - Documentation, test scaffolding, and deployment assets needed for launch.
 
@@ -25,7 +26,7 @@
 - Fully automated integrations with third-party workflow systems (to be defined later).
 
 ### 3.3 Pending decisions
-- Upload orchestration pattern (event-driven, webhook relay, or polling) remains under evaluation. Architecture is being documented now so the Data Quality Assessment API can accept either direct uploads or external blob references without rework.
+- Upload orchestration pattern (event-driven, webhook relay, or polling) remains under evaluation. Architecture is being documented now so the Wemetrix platform can accept either direct uploads or external blob references without rework.
 ## 4. Stakeholders and roles
 | Group | Representative roles | Primary interests |
 | ----- | ------------------- | ----------------- |
@@ -35,20 +36,32 @@
 | Configuration team | Data stewards, configurators | Flexible rule management, sandbox testing. |
 | End users | Data submitters, external partners | Clear validation feedback, fast turnaround. |
 
-## 5. Data cleansing business requirements
-1. **Mandatory pre-validation cleansing:** The platform must cleanse incoming datasets (duplicate removal, format standardisation, missing-value handling) whenever tenant or dataset policies require it so profiling and validation run against trusted inputs.
-2. **Policy-driven orchestration:** Business owners need to define cleansing triggers per dataset type (e.g., “always cleanse credit applications,” “only cleanse when null-rate exceeds threshold”) without redeploying code.
-3. **Audit-grade transparency:** Each cleansing job must produce metrics that show what changed (records cleansed, rejects, transformation deltas) and link them to the originating upload so auditors can trace corrective actions.
-4. **Business continuity:** Failures during cleansing must stop the downstream pipeline, notify stakeholders with actionable diagnostics, and allow resumable reruns so poor-quality data never reaches profiling/validation unnoticed.
+## 5. Core data quality & governance requirements
 
-- Multi-tenant API that accepts Excel/CSV uploads, runs cleansing pipelines and validations via modular engines, and returns detailed reports.
-- Configurable rule libraries for cleansing and validation, based on logical fields that abstract tenant-specific schemas.
-- Metadata registry (see `src/dq_metadata` and `docs/METADATA_LAYER_SPEC.md`) that documents every upload, cleansing job, validation job, rule version, and user action for governance.
-- Designed for Azure-native deployment with enterprise security (SSO, Key Vault, RBAC).
+The Wemetrix platform treats **data contracts** and a **semantic data catalogue** as the ground truth for how each producer feed participates in the overall data model. Cleansing, profiling, validation, infra, and governance flows are all driven from these contracts instead of one-off configurations.
 
-- File intake, cleansing execution, validation execution, reporting, configuration lifecycle, and admin operations as detailed in `docs/FUNCTIONAL_REQUIREMENTS.md`.
-- Metadata endpoints for lineage queries, audit event retrieval, compliance tagging, and evidence exports.
-- Automation-friendly workflows (idempotent uploads, scriptable APIs, reruns).
+### 5.1 Contract and catalogue centricity
+1. Every onboarded dataset must have a registered `DataContract` that:
+   - References reusable rule sets, schemas, infra profiles, and governance profiles from the authoring libraries.
+   - Maps producer-specific columns and files into canonical catalogue entities/attributes (e.g., `Customer.email`, `Transaction.amount`).
+2. Contracts must be versioned and promotable across environments (dev/test/prod), with lifecycle metadata (status, owners, approvals) captured for audit.
+3. The semantic catalogue (`dq_catalog`) must act as the single reference for business meaning, so rules and governance policies can be authored once per attribute/entity and reused across tenants and feeds.
+
+### 5.2 Data cleansing requirements
+4. **Mandatory pre-validation cleansing (when required):** The platform must cleanse incoming datasets (duplicate removal, format standardisation, missing-value handling) whenever tenant or dataset policies require it so profiling and validation run against trusted inputs.
+5. **Policy-driven orchestration:** Business owners need to define cleansing triggers per dataset type (e.g., “always cleanse credit applications,” “only cleanse when null-rate exceeds threshold”) without redeploying code, using contract and library references rather than hard-coded flags.
+6. **Audit-grade transparency:** Each cleansing job must produce metrics that show what changed (records cleansed, rejects, transformation deltas) and link them to the originating upload and contract so auditors can trace corrective actions.
+7. **Business continuity:** Failures during cleansing must stop the downstream pipeline, notify stakeholders with actionable diagnostics, and allow resumable reruns so poor-quality data never reaches profiling/validation unnoticed.
+
+### 5.3 Validation, profiling, and reporting
+8. Validation and profiling jobs must execute against the materialised contract bundle (schema + rules + catalogue mappings) resolved by the registry at runtime, not against ad-hoc configuration files.
+9. Rule libraries for validation, profiling, and cleansing must be reusable across tenants and contracts, with rule severity, thresholds, and activation windows managed via bindings and profiles rather than duplicated per feed.
+10. The platform must expose clear, contract-aware reports and APIs (per job, per tenant, per dataset/contract) that show which rules fired, which catalogue attributes were affected, and how cleansing/profiling influenced outcomes.
+
+### 5.4 Governance, metadata, and automation
+11. Governance profiles (PII classifications, retention, access policies) authored in governance libraries must be referenced by contracts and enforced consistently across cleansing, validation, storage, and access flows.
+12. Metadata services (see `src/dq_metadata` and `docs/METADATA_LAYER_SPEC.md`) must capture end-to-end lineage: uploads, contracts, catalogue mappings, cleansing jobs, profiling snapshots, validation jobs, rule versions, infra/governance profiles, and user actions.
+13. The platform must provide automation-friendly workflows (idempotent uploads, scriptable APIs, reruns) so contracts, catalogue entries, and rule libraries can be managed through CI/CD and self-service tools rather than manual operations.
 
 ## 7. Non-functional requirements summary
 - Performance, scalability, availability, security, retention, observability, maintainability, DR, and integration expectations per `docs/NON_FUNCTIONAL_REQUIREMENTS.md`.
@@ -90,7 +103,7 @@
 
 ## 13. High-level timeline (subject to refinement)
 1. **Discovery & design (current):** Finalize specs, metadata design, and API contracts.
-2. **MVP build:** Implement core validation pipeline, configuration management, metadata registry foundation.
+2. **MVP build:** Implement core validation pipeline, contract registry and semantic catalogue integration, and metadata registry foundation.
 3. **Integration & hardening:** Connect security, retention, monitoring; run load and DR tests.
 4. **Pilot rollout:** Onboard initial tenants, collect feedback, close gaps.
 5. **General availability:** Broader deployment, finalize playbooks, hand over to operations.

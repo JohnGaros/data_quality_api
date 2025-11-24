@@ -1,0 +1,77 @@
+flowchart LR
+    subgraph Authoring Libraries
+        RULELIB[rule_libraries]
+        SCHEMALIB[schema_libraries]
+        INFRALIB[infra_libraries]
+        GOVLIB[governance_libraries]
+        ACTIONLIB[action_libraries]
+    end
+
+    subgraph Registry Layer
+        CONTRACTS[dq_contracts]
+        ACTIONS[dq_actions]
+        JOBS[dq_jobs]
+        METADATA_REGISTRY[dq_metadata]
+    end
+
+    subgraph Engines
+        CLEANSING[dq_cleansing]
+        PROFILING[dq_profiling]
+        VALIDATION[dq_core]
+    end
+
+    subgraph API & Services
+        API[dq_api]
+        INTEGRATIONS[dq_integration]
+        SECURITY[dq_security]
+    end
+
+    subgraph Catalog
+        CATALOG[dq_catalog]
+    end
+
+    subgraph External
+        ORCH[Orchestrators]
+        AZAD[Azure AD]
+        AZBLOB[Azure Blob Storage]
+    end
+
+    RULELIB --> CONTRACTS
+    SCHEMALIB --> CONTRACTS
+    INFRALIB --> CONTRACTS
+    GOVLIB --> CONTRACTS
+    ACTIONLIB --> ACTIONS
+
+    CONTRACTS --> CATALOG
+    CONTRACTS --> CLEANSING
+    CONTRACTS --> PROFILING
+    CONTRACTS --> VALIDATION
+
+    API --> SECURITY
+    SECURITY --> AZAD
+
+    API --> JOBS
+    JOBS --> CONTRACTS
+    JOBS --> ACTIONS
+
+    API --> CLEANSING
+    API --> PROFILING
+    API --> VALIDATION
+    API --> METADATA_REGISTRY
+    API --> INTEGRATIONS
+
+    CLEANSING --> PROFILING
+    CLEANSING --> METADATA_REGISTRY
+
+    PROFILING --> VALIDATION
+    PROFILING --> METADATA_REGISTRY
+
+    VALIDATION --> METADATA_REGISTRY
+
+    AZBLOB --> CLEANSING
+    AZBLOB --> PROFILING
+
+    METADATA_REGISTRY --> INTEGRATIONS
+    ACTIONS --> INTEGRATIONS
+
+    ORCH --> API

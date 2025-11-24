@@ -27,6 +27,7 @@ It describes what each directory and file is for, how they interact, and how the
 data_quality_api/
 ├── src/                # Application source code
 ├── configs/            # Configuration files and rule libraries
+├── action_libraries/   # Post-job action templates
 ├── rule_libraries/     # Rule authoring (validation/profiling/cleansing)
 ├── schema_libraries/   # Schema/taxonomy authoring
 ├── infra_libraries/    # Infrastructure profile authoring
@@ -135,7 +136,25 @@ dq_contracts/
 
 ---
 
-### 4.3 `dq_cleansing/` — Data Cleansing Engine
+### 4.3 `dq_actions/` — Action Profile Registry (Planned)
+
+**Purpose:** Provides runtime storage and APIs for ActionProfiles authored in `action_libraries/`. Guarantees canonical JSON storage in Postgres so job managers and integrations can resolve tenant/environment-scoped post-job behaviours.
+
+```text
+dq_actions/
+├── README.md         # Architectural notes (planned)
+├── models.py         # (planned) ActionType, ActionConfig, ActionProfile, ActionProfileRef
+├── registry.py       # (planned) CRUD/search/promotion workflows for ActionProfiles
+└── repository.py     # (planned) Postgres-backed persistence
+```
+
+- Exposes lookup helpers for `dq_api` job managers to attach actions to JobDefinitions.
+- Supplies ActionProfiles to `dq_integration.actions` executors after jobs complete.
+- Mirrors `dq_contracts` patterns: authoring → loaders → canonical JSON → registry → runtime consumers.
+
+---
+
+### 4.4 `dq_cleansing/` — Data Cleansing Engine
 
 **Purpose:** Hosts the cleansing rule governance model and execution engine that prepares datasets before validation runs.
 
@@ -168,7 +187,7 @@ dq_cleansing/
 
 ---
 
-### 4.4 `dq_profiling/` — Profiling Module
+### 4.5 `dq_profiling/` — Profiling Module
 
 **Purpose:** Produces profiling snapshots, statistics, and validation contexts derived from cleansed datasets so rule execution can adapt to real-world data behaviour.
 
@@ -199,7 +218,7 @@ dq_profiling/
 
 ---
 
-### 4.5 `dq_api/` — REST API Layer
+### 4.6 `dq_api/` — REST API Layer
 
 **Purpose:** Exposes core functionality through REST endpoints (FastAPI). Organized by user role and functional domain.
 
@@ -242,7 +261,7 @@ dq_api/
 
 ---
 
-### 4.6 `dq_admin/` — Administrative Layer
+### 4.7 `dq_admin/` — Administrative Layer
 
 **Purpose:** Provides system-level management for users, tenants, roles, and audit trails.
 
@@ -261,7 +280,7 @@ dq_admin/
 
 ---
 
-### 4.7 `dq_metadata/` — Metadata & Governance Layer
+### 4.8 `dq_metadata/` — Metadata & Governance Layer
 
 **Purpose:** Centralizes governance metadata for datasets, validation jobs, rule versions, and audit events.
 
@@ -285,7 +304,7 @@ This layer underpins governance by supporting audit evidence, compliance tagging
 
 ---
 
-### 4.8 `dq_catalog/` — Semantic Data Catalog
+### 4.9 `dq_catalog/` — Semantic Data Catalog
 
 **Purpose:** Defines canonical entities/attributes/relationships that producer feeds map into so rules/governance can be authored once and reused across tenants.
 
@@ -302,7 +321,25 @@ dq_catalog/
 
 ---
 
-### 4.9 `dq_integration/` — External Integrations
+### 4.10 `dq_jobs/` — JobDefinition Registry (Planned)
+
+**Purpose:** Stores tenant-scoped JobDefinitions/Checkpoints referencing existing DataContracts. Each JobDefinition specifies trigger semantics (manual, scheduled, external event) and attaches ActionProfiles for success/failure/anomaly cases.
+
+```text
+dq_jobs/
+├── README.md          # Architectural overview (planned)
+├── models.py          # (planned) JobDefinition, TriggerConfig, JobTriggerType, JobRun
+├── registry.py        # (planned) JSONB-backed CRUD/search/promotion workflows
+└── repository.py      # (planned) Postgres persistence layer
+```
+
+- Provides APIs for `dq_api` and external orchestrators to fetch execution plans before invoking the DQ pipeline.
+- References DataContracts via IDs/versions and never embeds rules or schemas, keeping contracts as the single semantic source of truth.
+- Maintains lifecycle states (draft, pending approval, active, retired) and promotion logs similar to contracts.
+
+---
+
+### 4.11 `dq_integration/` — External Integrations
 
 **Purpose:** Manages connectivity with external platforms, such as Azure Blob Storage and Microsoft Power Platform.
 
@@ -317,22 +354,26 @@ dq_integration/
 │   ├── powerapps_connector.py
 │   ├── powerbi_exporter.py
 │   └── msflow_hooks.py
-└── notifications/
-	├── email_notifier.py
-	├── webhook_notifier.py
-	└── ms_teams_notifier.py
+├── notifications/
+    ├── email_notifier.py
+    ├── webhook_notifier.py
+    └── ms_teams_notifier.py
+└── actions/
+    └── README.md             # (planned) Action executor interfaces mapping ActionTypes to adapters
 ```
 
 - **azure_blob/**: Handles file storage, retrieval, and (future) event-driven or polled validations using Azure Blob containers; `external_triggers.py` keeps hooks ready for whichever orchestration model is approved.
 - **power_platform/**: Enables integration with PowerApps, Power BI, and Power Automate (MS Flow).
 - **notifications/**: Sends alerts and reports via email, webhooks, or MS Teams.
+- **actions/**: Home for runtime ActionExecutor interfaces that take resolved ActionProfiles and invoke notification/webhook/lineage/ticketing adapters after jobs finish.
 
 #### Decoupled upload architecture (future scenario)
+
 - **Goal:** Allow large file ingestion to happen through a dedicated upload service (e.g., Azure Functions, Logic Apps, or enterprise middleware) while the Data Quality Assessment API focuses on validation and reporting.
 - **Trigger options (decision deferred):**
-  - *Event-driven:* Azure Event Grid or Storage queue event signals the DQ API to pull the blob by URI.
-  - *Webhook relay:* Upload service calls a lightweight `external_uploads` endpoint with blob metadata when transfers complete.
-  - *Scheduled polling:* Background worker queries storage for ready-to-validate blobs and enqueues jobs.
+  - _Event-driven:_ Azure Event Grid or Storage queue event signals the DQ API to pull the blob by URI.
+  - _Webhook relay:_ Upload service calls a lightweight `external_uploads` endpoint with blob metadata when transfers complete.
+  - _Scheduled polling:_ Background worker queries storage for ready-to-validate blobs and enqueues jobs.
 - **DQ API expectations:** Receives immutable blob references (URI, ETag/checksum, tenant metadata) and creates profiling-driven validation contexts before executing rules.
 - **Routing impact:** `dq_api/routes/external_uploads.py` (placeholder) will host future endpoints that accept blob references instead of raw files.
 - **Integration impact:** `dq_integration/azure_blob/` keeps Azure SDK adapters plus future event hook helpers coordinating with the chosen trigger model.
@@ -341,9 +382,9 @@ dq_integration/
 
 ---
 
-### 4.9 `dq_dsl/` — Domain-Specific Language (Future Enhancement)
+### 4.12 `dq_dsl/` — Domain-Specific Language (Future Enhancement)
 
-### 4.10 `dq_security/` — Enterprise Security Layer
+### 4.13 `dq_security/` — Enterprise Security Layer
 
 **Purpose:** Centralized module for identity, authorization, secret management, and audit logging — ensuring compliance with enterprise security requirements on Azure.
 
@@ -369,7 +410,7 @@ This layer is critical for ensuring Zero Trust compliance, multi-tenant isolatio
 
 ---
 
-### 4.11 `dq_tests/` — Testing Framework (Future)
+### 4.14 `dq_tests/` — Testing Framework (Future)
 
 **Purpose:** Automated regression testing for rules and configurations.
 
@@ -390,7 +431,7 @@ dq_tests/
 
 ---
 
-### 4.12 `main.py` — API Entrypoint
+### 4.15 `main.py` — API Entrypoint
 
 **Purpose:** Bootstraps the FastAPI app, loads configuration, and starts the API service.
 
@@ -435,6 +476,12 @@ rule_libraries/
 - `cleansing_rules/`: Cleansing templates; versioned independently and governed by cleansing approvals.
 
 `rule_libraries` is the **authoring layer**: it owns file-based catalogs and loaders that parse YAML/JSON/Excel into Pydantic rule models. It performs linting/static checks and hands off canonical JSON to the registry layer.
+
+---
+
+### `action_libraries/`
+
+Author post-job ActionProfiles (notifications, lineage events, webhooks, ticketing, storage exports, etc.) in YAML/JSON/Excel. Loaders will validate structure and normalise them into canonical JSON consumed by the runtime `dq_actions` registry.
 
 ---
 
@@ -568,13 +615,13 @@ tests/
 
 ## 7. Future Evolution
 
-| Phase   | Focus                   | Relevant Directories                       |
-| ------- | ----------------------- | ------------------------------------------ |
+| Phase   | Focus                   | Relevant Directories                              |
+| ------- | ----------------------- | ------------------------------------------------- |
 | Phase 1 | Core Engine + API       | dq_core/, dq_api/, rule_libraries/, dq_contracts/ |
-| Phase 2 | Admin, Reporting, RBAC  | dq_admin/, dq_security/                    |
-| Phase 3 | DSL & Testing           | dq_dsl/, dq_tests/                         |
-| Phase 4 | Cloud Integration       | dq_integration/azure_blob/, infra/azure/   |
-| Phase 5 | Governance & Compliance | docs/SECURITY_GUIDE.md, docs/RBAC_MODEL.md |
+| Phase 2 | Admin, Reporting, RBAC  | dq_admin/, dq_security/                           |
+| Phase 3 | DSL & Testing           | dq_dsl/, dq_tests/                                |
+| Phase 4 | Cloud Integration       | dq_integration/azure_blob/, infra/azure/          |
+| Phase 5 | Governance & Compliance | docs/SECURITY_GUIDE.md, docs/RBAC_MODEL.md        |
 
 ---
 
