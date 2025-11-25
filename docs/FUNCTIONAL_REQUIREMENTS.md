@@ -29,7 +29,7 @@ Out of scope for now:
 
 ### 4.1 File intake and validation (Uploader focus)
 
-1. The platform must accept Excel and CSV uploads via REST API and future UI, whether provided as direct file payloads or as immutable blob references supplied after an external upload completes (`/uploads`, `/jobs/run/{job_definition_id}`; see `docs/API_CONTRACTS.md`).
+1. The platform must accept Excel and CSV uploads via REST API and future UI, whether provided as direct file payloads or as immutable blob references supplied after an external upload completes (`/uploads`, `/jobs/run/{job_definition_id}`; see `docs/API_CONTRACTS.md`), supporting both direct and decoupled orchestrator-driven ingestion.
 2. The Uploader must see immediate confirmation that the file (or external reference) was received and queued.
 3. The platform must link each upload or triggered job to the correct customer tenant, environment, and DataContract/JobDefinition, regardless of the ingestion path.
 4. The validation engine must build a profiling-driven validation context using the upload's profiling snapshot, then run all active rules inside that context.
@@ -87,16 +87,26 @@ _Profiling-driven example:_ If profiling shows a tenant's historical null rate f
 2. Reports must include per-rule statistics, affected records, and total counts for both cleansing and validation phases, and must indicate which catalogue attributes and governance profiles were in force.
 3. The platform must offer export formats (JSON, CSV) for downstream tools and evidence packs.
 4. The platform must notify relevant users (via configured ActionProfiles: email/webhook/Teams/Slack) when critical cleansing or validation failures occur, with opt-in control at tenant/JobDefinition level.
+5. The platform must generate Data Docs (HTML/markdown) for contracts, JobDefinitions, and specific runs, scoped by tenant/environment, to support audits and onboarding (see `docs/DATA_DOCS_STRATEGY.md`).
 
-### 4.6 Platform-wide requirements
+### 4.6 Job orchestration, actions, and SDK (Configurator & Admin focus)
+
+1. The platform must support JobDefinitions/Checkpoints that reference DataContracts (and optional DatasetContracts) plus ActionProfiles, scoped per tenant/environment, with triggers via API, external orchestrator calls, or scheduled workflows.
+2. ActionProfiles from the Action Library must be reusable across JobDefinitions and allow different behaviours per environment (e.g., DEV vs PROD notifications/webhooks/tickets).
+3. A runtime SDK/context façade (`DQContext`) must expose programmatic methods to run contract-driven validations, execute JobDefinitions, and retrieve metadata/reports for notebooks, CLI tools, and orchestrator adapters.
+4. Job and action lifecycle changes (creation, promotion, retirement) must be captured in metadata and respect approvals/promotion policies.
+
+### 4.7 Platform-wide requirements
 
 1. Every requirement above must be accessible through documented REST endpoints, CLI tooling, or workflows as described in `docs/API_CONTRACTS.md`.
-2. Operations must be scriptable for automation (CLI or service accounts), including contract registration, rule/library sync, JobDefinition management, and ActionProfile management.
+2. Operations must be scriptable for automation (CLI or service accounts), including contract registration, rule/library sync, JobDefinition management, ActionProfile management, and Data Docs generation.
 3. The platform must guard against duplicate uploads or job submissions by using idempotent job identifiers and checksums.
 4. The platform must handle batch uploads, processing each file separately but under a single job or correlation reference.
 5. The platform must log and surface cleansing and validation errors when rule execution fails (e.g., malformed expressions) and must provide actionable diagnostics for Configurators and Admins.
 6. The metadata layer must capture lineage for every cleansing and validation job, including source assets, rule versions, governance/infra profiles, JobDefinitions, ActionProfiles, and generated reports.
 7. Metadata endpoints must allow authorized users to query audit trails, compliance tags (including GDPR fields), and evidence packs on demand.
+8. Registries for contracts, jobs, actions, and metadata must rely on pluggable Store interfaces (Postgres today; Blob/filesystem later) so persistence backends can evolve without changing business logic (see `docs/STORES_AND_PERSISTENCE.md`).
+9. Cleansing, profiling, and validation must use an execution engine abstraction (`dq_engine`) so multiple backends (Pandas now; Spark/SQL later) can be introduced via contract/infra profile hints without rewriting contracts or rules.
 
 ## 5. Acceptance checkpoints
 
