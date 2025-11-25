@@ -36,6 +36,10 @@ Throughout this document, directory names are referenced in backticks so you can
 | Security                          | `src/dq_security/`                                               | OAuth2/Azure AD auth, RBAC, Key Vault, security logging                 | `docs/SECURITY_GUIDE.md`                                   |
 | Action library (new)              | `action_libraries/`, `src/dq_actions/`                           | Reusable post-job behaviours, canonical JSON profiles                   | `docs/ACTIONS_AND_JOB_DEFINITIONS.md`                      |
 | JobDefinitions (new)              | `src/dq_jobs/`                                                   | Tenant-scoped execution plans referencing contracts + actions           | `docs/ACTIONS_AND_JOB_DEFINITIONS.md`                      |
+| Runtime SDK / Context (new)       | `src/dq_sdk/`                                                    | Convenience facade (`DQContext`) over contracts/jobs/engines for runtime use | `docs/CONTEXT_FACADE.md`                                   |
+| Stores (new)                      | `src/dq_stores/`                                                 | Pluggable store interfaces/adapters for canonical JSON persistence (Postgres, Blob, filesystem) | `docs/STORES_AND_PERSISTENCE.md`                           |
+| Execution engine abstraction (new)| `src/dq_engine/`                                                 | Backend-agnostic execution interfaces; default Pandas engine, future Spark/SQL | `docs/EXECUTION_ENGINES.md`                                |
+| Data Docs (new)                   | `src/dq_docs/`                                                   | HTML/markdown rendering of contracts, jobs, and runs for audit/readability | `docs/DATA_DOCS_STRATEGY.md`                               |
 
 > **Tip:** For a file-by-file breakdown, always refer back to `docs/ARCHITECTURE_FILE_STRUCTURE.md`. This document highlights how the components interact.
 
@@ -168,6 +172,34 @@ Contract-driven orchestration ensures that rules, schemas, and lifecycle metadat
 - **Orthogonal libraries:** Rules (`rule_libraries`), schemas (`schema_libraries`), infra profiles (`infra_libraries`), and governance profiles (`governance_libraries`) are authored separately and versioned independently. Each emits canonical JSON via library loaders.
 - **Semantic catalog:** `dq_catalog` defines canonical entities/attributes/relationships. Contracts map producer fields to catalog attributes so rules/governance authored at the catalog level can be reused across feeds.
 - **Contract composition:** `DataContract` holds references (`SchemaRef`, `RuleSetRef`, `InfraProfileRef`, `GovernanceProfileRef`) plus catalog mappings (`catalog_entity_id` on datasets, `catalog_attribute_id` on columns). At runtime the registry materialises a bundle with resolved schema/rules/infra/governance profiles and catalog mappings for engines and IaC to consume.
+
+### 2.6 Runtime SDK & Context Facade
+
+- **Purpose:** `DQContext` (in `src/dq_sdk/`) is a runtime convenience layer over `dq_contracts`, `dq_jobs`, `dq_cleansing`, `dq_profiling`, `dq_core`, `dq_metadata`, and `dq_integration`.
+- **Scope:** Intended for notebooks, CLI tools, tests, and orchestration adapters (e.g., Airflow/ADF). It reads configuration from contracts + orthogonal libraries + catalog and orchestrates cleansing → profiling → validation in a consistent sequence.
+- **Non-goal:** It is **not** a configuration store. Contracts, libraries, and the semantic catalog remain the only ground truth for schemas, rules, infra, and governance. The context facade must never introduce parallel configuration.
+- **Current state:** Provides method stubs for contract resolution, job definition execution, blob uploads, and metadata recording; wiring will follow the registries described in `docs/CONTRACT_DRIVEN_ARCHITECTURE.md` and `docs/ACTIONS_AND_JOB_DEFINITIONS.md`.
+
+### 2.7 Store Interfaces
+
+- **Purpose:** Provide pluggable persistence abstractions (in `src/dq_stores/`) for canonical JSON artifacts like contracts, job definitions, action profiles, and job runs. Stores allow registries to swap backends (Postgres, filesystem, Azure Blob) without changing callers.
+- **Scope:** Stores back registries in `dq_contracts`, `dq_jobs`, `dq_actions`, `dq_metadata`, and can be consumed by `DQContext` or API services.
+- **Non-goal:** Stores do not become new configuration sources; they only persist the canonical JSON defined by contracts and libraries. Ground truth remains unchanged.
+- **Current state:** Base interfaces plus Postgres/file-backed adapters for job runs; contract/job/action stores are stubbed pending repository implementations.
+
+### 2.8 Execution Engine Abstraction
+
+- **Purpose:** `dq_engine` defines backend-agnostic execution interfaces for cleansing, profiling, and validation so multiple backends (Pandas now; Spark/SQL later) can be supported without changing higher-level orchestration.
+- **Scope:** Engines consume dataset references resolved via contracts/infra profiles and are injected into `dq_cleansing`, `dq_profiling`, `dq_core`, and `DQContext`. Tenant/env scoping remains at the job/contract layer; engines only operate on provided dataset handles.
+- **Non-goal:** No new configuration store; backend selection derives from contracts and infra profiles. Engines do not embed configuration.
+- **Current state:** Base interfaces plus a stubbed `PandasExecutionEngine` default; Spark placeholder added for future infra-driven selection.
+
+### 2.9 Data Docs
+
+- **Purpose:** Generate tenant/environment-scoped, human-readable documentation (HTML/markdown) for DataContracts, JobDefinitions/Checkpoints, and job runs using existing registries (`dq_contracts`, `dq_jobs`, `dq_metadata`) and libraries. Designed for auditors, onboarding, and evidence packs.
+- **Scope:** `dq_docs` consumes canonical JSON and metadata; it does not store or alter configuration. Outputs can be snapshotted and exported.
+- **Non-goal:** No new configuration source; Data Docs only render the ground truth maintained in contracts, libraries, and metadata stores.
+- **Current state:** View models, generator stubs, HTML renderer, and CLI scaffold. Wiring to registries/metadata is TODO with references to docs.
 
 ## 3. Upload pathways
 

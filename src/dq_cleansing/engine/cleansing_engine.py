@@ -8,6 +8,12 @@ from ..models.cleansing_job import (
     CleansingJobStatus,
 )
 from ..models.cleansing_rule import CleansingRule
+try:
+    from dq_engine.base import ExecutionEngine
+    from dq_engine.pandas_engine import PandasExecutionEngine
+except Exception:  # pragma: no cover - engine abstraction optional during stub phase
+    ExecutionEngine = None  # type: ignore
+    PandasExecutionEngine = None  # type: ignore
 from .transformer import TransformationOutcome, apply_transformation
 from .validators import validate_rule
 
@@ -17,8 +23,11 @@ Dataset = List[Dict[str, Any]]
 class CleansingEngine:
     """Executes cleansing transformations in order and captures metrics."""
 
-    def __init__(self) -> None:
+    def __init__(self, execution_engine: ExecutionEngine | None = None) -> None:
         self._validator = validate_rule
+        # TODO: delegate dataset operations to execution_engine once cleansing
+        # pipeline is refactored. For now, keep in-memory list-of-dicts logic.
+        self.execution_engine = execution_engine or (PandasExecutionEngine() if PandasExecutionEngine else None)
 
     def run(
         self,

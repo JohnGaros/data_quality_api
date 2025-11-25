@@ -64,6 +64,10 @@ src/
 ├── dq_profiling/      # Profiling engine, context builders, and reporting
 ├── dq_api/            # REST API layer (FastAPI)
 ├── dq_admin/          # System and tenant administration
+├── dq_sdk/            # Runtime SDK/context facade (DQContext) over contracts/jobs/engines
+├── dq_stores/         # Store interfaces and adapters for pluggable persistence (Postgres/Blob/filesystem)
+├── dq_engine/         # Execution engine abstraction (base interfaces, Pandas default, Spark/SQL stubs)
+├── dq_docs/           # Data Docs generation (models, generator, renderers, CLI stub)
 ├── dq_metadata/       # Governance metadata layer
 ├── dq_catalog/        # Semantic data catalog (entities/attributes)
 ├── dq_integration/    # External integrations (Azure, Power Platform)
@@ -440,6 +444,67 @@ dq_tests/
 - Initialize environment and dependencies
 - Mount all API routes
 - Start the ASGI server
+
+---
+
+### 4.16 `dq_sdk/` — Runtime SDK & Context Facade
+
+**Purpose:** Provides the `DQContext` runtime facade for notebooks, CLI tools, tests, and orchestration adapters (Airflow/ADF). It orchestrates cleansing → profiling → validation using tenant/environment-scoped contracts and job definitions.
+
+**Key rules:**
+
+- Reads configuration exclusively from contracts, libraries, and the semantic catalog; it does not persist or override rule/schema/governance configuration.
+- Delegates to `dq_contracts`, `dq_jobs`, `dq_cleansing`, `dq_profiling`, `dq_core`, `dq_metadata`, and `dq_integration` once their registries/engines are available.
+- Early iterations ship with explicit `NotImplementedError` stubs to avoid silent drift from the contract-driven architecture.
+
+---
+
+### 4.17 `dq_stores/` — Pluggable Stores for Canonical Artifacts
+
+**Purpose:** Defines base Store interfaces and adapters so registries (`dq_contracts`, `dq_jobs`, `dq_actions`, `dq_metadata`) can persist canonical JSON to different backends (Postgres first, Blob/filesystem later) without changing callers.
+
+**Key files:**
+
+- `base.py` — Generic `Store` plus domain-specific store protocols (contracts, jobs, actions, job runs).
+- `postgres.py` — Postgres-focused adapters and stubs (metadata job runs delegate to the existing metadata repository).
+- `blob.py` — Stub for future Azure Blob-backed stores for large artifacts.
+
+---
+
+### 4.17 `dq_stores/` — Pluggable Stores for Canonical Artifacts
+
+**Purpose:** Defines base Store interfaces and adapters so registries (`dq_contracts`, `dq_jobs`, `dq_actions`, `dq_metadata`) can persist canonical JSON to different backends (Postgres first, Blob/filesystem later) without changing callers.
+
+**Key files:**
+
+- `base.py` — Generic `Store` plus domain-specific store protocols (contracts, jobs, actions, job runs).
+- `postgres.py` — Postgres-focused adapters and stubs (metadata job runs delegate to the existing metadata repository).
+- `blob.py` — Stub for future Azure Blob-backed stores for large artifacts.
+
+---
+
+### 4.18 `dq_engine/` — Execution Engine Abstraction
+
+**Purpose:** Provides backend-agnostic execution interfaces for cleansing, profiling, and validation with a default `PandasExecutionEngine` and stubs for Spark/SQL. Higher layers (contracts/infra profiles) decide which backend to use; engines do not store configuration.
+
+**Key files:**
+
+- `base.py` — `ExecutionEngine` and `DatasetHandle` protocol.
+- `pandas_engine.py` — Default pandas-backed implementation (stubbed operations).
+- `spark_engine.py` — Placeholder for Spark-backed execution.
+
+---
+
+### 4.19 `dq_docs/` — Data Docs Generation
+
+**Purpose:** Generates tenant/environment-scoped, human-readable docs (HTML/markdown) for contracts, job definitions, and runs by consuming registries/metadata. Does not store or modify configuration.
+
+**Key files:**
+
+- `models.py` — View models (ContractDoc, JobDefinitionDoc, RunDoc, etc.).
+- `generator.py` — Orchestrates lookups from registries/stores to build view models.
+- `renderers/html_renderer.py` — Simple HTML renderer for docs.
+- `cli.py` — Stub CLI entrypoint to generate docs.
 
 ---
 

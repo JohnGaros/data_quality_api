@@ -11,6 +11,12 @@ from ..models.profiling_snapshot import (
     ProfilingSnapshot,
     ValueFrequency,
 )
+try:
+    from dq_engine.base import ExecutionEngine
+    from dq_engine.pandas_engine import PandasExecutionEngine
+except Exception:  # pragma: no cover - optional dependency
+    ExecutionEngine = None  # type: ignore
+    PandasExecutionEngine = None  # type: ignore
 
 DatasetRow = Dict[str, Any]
 Dataset = Iterable[DatasetRow]
@@ -24,10 +30,14 @@ class ProfilingEngine:
         sample_size: int = 5,
         top_frequencies: int = 5,
         histogram_buckets: int = 5,
+        execution_engine: "ExecutionEngine | None" = None,
     ) -> None:
         self._sample_size = sample_size
         self._top_frequencies = top_frequencies
         self._histogram_buckets = histogram_buckets
+        # TODO: delegate profiling to execution engine when dataset handles are
+        # available. Keep in-memory iterable-based implementation for now.
+        self.execution_engine = execution_engine or (PandasExecutionEngine() if PandasExecutionEngine else None)
 
     def profile(self, job: ProfilingJob, dataset: Dataset) -> ProfilingJobResult:
         """Profile the dataset and return a structured result."""
