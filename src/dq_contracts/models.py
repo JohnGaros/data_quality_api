@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 ParameterValue = Union[str, int, float, bool, List[str], Dict[str, Any]]
 
@@ -188,7 +188,9 @@ class ColumnContract(BaseModel):
     """Describes a single column within a dataset contract."""
 
     column_id: str = Field(..., description="Unique identifier within the contract.")
-    logical_field_key: str = Field(..., description="Reference to dq_core logical field catalog.")
+    logical_field_key: Optional[str] = Field(
+        None, description="DEPRECATED: Reference to dq_core logical field catalog. Use catalog_attribute_id instead."
+    )
     display_name: Optional[str] = Field(None, description="External-friendly column name.")
     aliases: List[str] = Field(default_factory=list, description="Tenant-specific column names.")
     data_type: str = Field(..., description="Declared data type (string, decimal, date, etc.).")
@@ -198,7 +200,7 @@ class ColumnContract(BaseModel):
     format: Optional[str] = Field(None, description="Format hint (ISO-8601, currency, etc.).")
     constraints: ColumnConstraint = Field(default_factory=ColumnConstraint)
     catalog_attribute_id: Optional[str] = Field(
-        None, description="Semantic catalog attribute this column maps to (e.g., Customer.email)."
+        None, description="Global Semantic Catalog Attribute ID (e.g., customer_email_v2)."
     )
     profiling_expectations: List[ProfilingExpectation] = Field(
         default_factory=list,
@@ -233,8 +235,10 @@ class DatasetContract(BaseModel):
     environment: Environment = Field(..., description="Environment where the dataset contract is active.")
     version: str = Field(..., description="Dataset contract version.")
     description: Optional[str] = Field(None, description="Purpose of the dataset.")
-    catalog_entity_id: Optional[str] = Field(
-        None, description="Semantic catalog entity this dataset maps to (e.g., Customer, Account)."
+    catalog_entity_ids: Optional[List[str]] = Field(
+        default=None,
+        alias="catalog_entity_id",
+        description="One or more Global Semantic Catalog Entity IDs (e.g., customer_v1).",
     )
     owner: Optional[str] = Field(None, description="Business owner or steward.")
     columns: List[ColumnContract] = Field(default_factory=list, description="Ordered column definitions.")
@@ -255,6 +259,20 @@ class DatasetContract(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Arbitrary dataset-level metadata.")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    @field_validator("catalog_entity_ids", mode="before")
+    @classmethod
+    def _coerce_catalog_entity_ids(cls, value: Any) -> Optional[List[str]]:
+        """Allow single strings or lists for catalog entity references."""
+
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = [value]
+        if isinstance(value, (list, tuple, set)):
+            cleaned = [str(v).strip() for v in value if str(v).strip()]
+            return cleaned or None
+        raise TypeError("catalog_entity_ids must be a string or list of strings")
 
 
 class LifecycleEvent(BaseModel):

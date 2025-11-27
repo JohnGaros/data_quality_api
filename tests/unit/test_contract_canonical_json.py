@@ -92,3 +92,33 @@ def test_canonical_json_list_support() -> None:
     serialized = to_canonical_json([contract])
     assert isinstance(serialized, list)
     assert serialized[0]["contract_id"] == "contract-2"
+
+
+def test_dataset_contract_catalog_entity_ids_backward_compatibility() -> None:
+    """DatasetContract should accept single or multiple catalog entity IDs."""
+
+    # Legacy single value should coerce to list via alias
+    legacy_dataset = DatasetContract(
+        dataset_contract_id="ds-legacy",
+        dataset_type="legacy",
+        tenant_id="tnt-legacy",
+        environment=Environment.DEV,
+        version="1.0.0",
+        catalog_entity_id="customer_v1",
+    )
+    assert legacy_dataset.catalog_entity_ids == ["customer_v1"]
+    legacy_dump = legacy_dataset.model_dump(mode="json")
+    assert legacy_dump["catalog_entity_ids"] == ["customer_v1"]
+
+    # New list usage should persist as-is
+    modern_dataset = DatasetContract(
+        dataset_contract_id="ds-modern",
+        dataset_type="modern",
+        tenant_id="tnt-modern",
+        environment=Environment.DEV,
+        version="1.0.0",
+        catalog_entity_ids=["customer_v1", "account_v1"],
+    )
+    assert modern_dataset.catalog_entity_ids == ["customer_v1", "account_v1"]
+    modern_dump = modern_dataset.model_dump(mode="json")
+    assert modern_dump["catalog_entity_ids"] == ["customer_v1", "account_v1"]

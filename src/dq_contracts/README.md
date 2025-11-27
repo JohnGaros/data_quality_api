@@ -15,5 +15,5 @@
 ## Notes
 
 - File/YAML/Excel authoring lives in `rule_libraries/`, `schema_libraries/`, `infra_libraries/`, and `governance_libraries/`; this module consumes those models/references and stores/exposes canonical JSON.
-- Contracts now include catalog mappings (`catalog_entity_id`, `catalog_attribute_id`) and references to reusable profiles (`SchemaRef`, `RuleSetRef`, `InfraProfileRef`, `GovernanceProfileRef`).
+- Contracts now include catalog mappings (`catalog_entity_ids`, `catalog_attribute_id`) and references to reusable profiles (`SchemaRef`, `RuleSetRef`, `InfraProfileRef`, `GovernanceProfileRef`).
 - Extend `ContractRegistry` with your database implementation when wiring Postgres persistence.

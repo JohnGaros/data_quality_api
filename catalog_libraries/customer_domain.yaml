@@ -1,0 +1,16 @@
+entities:
+  - catalog_entity_id: "customer_v1"
+    name: "Customer"
+    description: "Global Customer Entity"
+    domain: "Sales"
+    attributes:
+      - catalog_attribute_id: "customer_email_v1"
+        name: "Email"
+        data_type: "string"
+        description: "Personal Email Address"
+        tags: ["PII", "Contact"]
+      - catalog_attribute_id: "customer_id_v1"
+        name: "Customer ID"
+        data_type: "string"
+        description: "Unique Customer Identifier"
+        tags: ["Primary Key"]

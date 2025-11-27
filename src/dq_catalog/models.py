@@ -17,6 +17,10 @@ class CatalogAttribute(BaseModel):
     data_type: str = Field(..., description="Semantic data type (string, decimal, date, etc.).")
     description: Optional[str] = Field(None, description="Business meaning of the attribute.")
     tags: List[str] = Field(default_factory=list, description="Labels/domains (e.g., PII, Retail).")
+    deprecated: bool = Field(False, description="Whether this attribute ID is retired (append-only versioning).")
+    external_ref: Optional[Dict[str, Any]] = Field(
+        None, description="Reference to external system IDs (e.g., Collibra GUID)."
+    )
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Custom attribute metadata.")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -30,6 +34,10 @@ class CatalogEntity(BaseModel):
     description: Optional[str] = Field(None, description="Business definition of the entity.")
     domain: Optional[str] = Field(None, description="Domain/subject area (e.g., Retail, Finance).")
     attributes: List[CatalogAttribute] = Field(default_factory=list, description="Attributes belonging to this entity.")
+    deprecated: bool = Field(False, description="Whether this entity ID is retired (append-only versioning).")
+    external_ref: Optional[Dict[str, Any]] = Field(
+        None, description="Reference to external system IDs (e.g., Collibra GUID)."
+    )
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Custom entity metadata.")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

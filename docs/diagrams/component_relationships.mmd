@@ -1,45 +1,80 @@
+---
+id: 127b139b-b0cb-467b-a459-9f5f77893ec8
+---
 flowchart LR
+    subgraph Authoring Libraries
+        RULELIB[rule_libraries]
+        SCHEMALIB[schema_libraries]
+        INFRALIB[infra_libraries]
+        GOVLIB[governance_libraries]
+        ACTIONLIB[action_libraries]
+    end
+
+    subgraph Registry Layer
+        CONTRACTS[dq_contracts]
+        ACTIONS[dq_actions]
+        JOBS[dq_jobs]
+        METADATA_REGISTRY[dq_metadata]
+    end
+
+    subgraph Engines
+        CLEANSING[dq_cleansing]
+        PROFILING[dq_profiling]
+        VALIDATION[dq_core]
+    end
+
+    subgraph API & Services
+        API[dq_api]
+        INTEGRATIONS[dq_integration]
+        SECURITY[dq_security]
+    end
+
+    subgraph Catalog
+        CATALOG[dq_catalog]
+    end
+
     subgraph External
-        AZAD["Azure AD"]
-        AZBLOB["Azure Blob Storage"]
+        ORCH[Orchestrators]
+        AZAD[Azure AD]
+        AZBLOB[Azure Blob Storage]
     end
 
-    subgraph Contracts
-        RULELIB["rule_libraries<br>(validation/cleansing/profiling authoring)"]
-        CONTRACTS["dq_contracts<br>(contract registry + bindings)"]
-    end
+    RULELIB --> CONTRACTS
+    SCHEMALIB --> CONTRACTS
+    INFRALIB --> CONTRACTS
+    GOVLIB --> CONTRACTS
+    ACTIONLIB --> ACTIONS
 
-    API["dq_api<br>(API layer)"]
-    CLEANSING["dq_cleansing<br>(cleansing engine)"]
-    PROFILING["dq_profiling<br>(profiling module)"]
-    RULES["dq_core<br>(validation engine)"]
-    METADATA["dq_metadata<br>(metadata & lineage)"]
-    INTEGRATIONS["dq_integration<br>(integrations)"]
-    SECURITY["dq_security<br>(security & RBAC)"]
-
-    API -->|authN/RBAC| SECURITY
-    SECURITY -->|token validation| AZAD
-
-    RULELIB -->|templates| CONTRACTS
-    CONTRACTS --> API
+    CONTRACTS --> CATALOG
     CONTRACTS --> CLEANSING
     CONTRACTS --> PROFILING
-    CONTRACTS --> RULES
+    CONTRACTS --> VALIDATION
 
-    API -->|submit jobs| CLEANSING
-    API -->|profile datasets| PROFILING
-    API -->|run validations| RULES
-    API -->|persist/query| METADATA
-    API -->|trigger integrations| INTEGRATIONS
+    API --> SECURITY
+    SECURITY --> AZAD
 
-    CLEANSING -->|cleansed dataset + metrics| PROFILING
-    CLEANSING -->|lineage & metrics| METADATA
+    API --> JOBS
+    JOBS --> CONTRACTS
+    JOBS --> ACTIONS
 
-    PROFILING -->|context snapshots| RULES
-    PROFILING -->|metadata events| METADATA
+    API --> CLEANSING
+    API --> PROFILING
+    API --> VALIDATION
+    API --> METADATA_REGISTRY
+    API --> INTEGRATIONS
 
-    RULES -->|validation results| METADATA
+    CLEANSING --> PROFILING
+    CLEANSING --> METADATA_REGISTRY
 
-    INTEGRATIONS -->|blob adapters| AZBLOB
-    AZBLOB -->|datasets| CLEANSING
-    AZBLOB -->|datasets| PROFILING
+    PROFILING --> VALIDATION
+    PROFILING --> METADATA_REGISTRY
+
+    VALIDATION --> METADATA_REGISTRY
+
+    AZBLOB --> CLEANSING
+    AZBLOB --> PROFILING
+
+    METADATA_REGISTRY --> INTEGRATIONS
+    ACTIONS --> INTEGRATIONS
+
+    ORCH --> API

@@ -1,1 +1,9 @@
 prompts/
+.env
+.env.*
+__pycache__/
+.DS_Store
+docs/.DS_Store
+docs/diagrams/.DS_Store
+docs/diagrams/data_quality_platform.png
+CATALOG_REFACTOR_PLAN.md
