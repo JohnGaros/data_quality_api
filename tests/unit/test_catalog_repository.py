@@ -322,3 +322,109 @@ def test_attribute_lookup_performance_with_large_catalog() -> None:
     entity_mid = repo.get_attribute("attr_50_25_v1")
     assert entity_mid is not None
     assert entity_mid.catalog_entity_id == "entity_50_v1"
+
+
+def test_deprecated_attribute_with_successor() -> None:
+    """Verify deprecated attributes can reference their successor."""
+    from datetime import datetime
+
+    store = InMemoryStore[str, CatalogEntity]()
+    repo = CatalogRepository(store)
+
+    # Create entity with deprecated attribute pointing to successor
+    entity = CatalogEntity(
+        catalog_entity_id="customer_v1",
+        name="Customer",
+        attributes=[
+            CatalogAttribute(
+                catalog_attribute_id="customer_email_v1",
+                name="Email (Legacy)",
+                entity_id="customer_v1",
+                data_type="string",
+                deprecated=True,
+                successor_id="customer_email_v2",
+                deprecation_date=datetime(2025, 1, 15),
+            ),
+            CatalogAttribute(
+                catalog_attribute_id="customer_email_v2",
+                name="Email",
+                entity_id="customer_v1",
+                data_type="string",
+                description="Customer email with improved validation",
+            ),
+        ],
+    )
+    repo.put_entity(entity)
+
+    # Verify deprecated attribute has successor info
+    parent = repo.get_attribute("customer_email_v1")
+    assert parent is not None
+    deprecated_attr = next(
+        a for a in parent.attributes if a.catalog_attribute_id == "customer_email_v1"
+    )
+    assert deprecated_attr.deprecated is True
+    assert deprecated_attr.successor_id == "customer_email_v2"
+    assert deprecated_attr.deprecation_date == datetime(2025, 1, 15)
+
+    # Verify successor attribute exists and is not deprecated
+    successor_attr = next(
+        a for a in parent.attributes if a.catalog_attribute_id == "customer_email_v2"
+    )
+    assert successor_attr.deprecated is False
+    assert successor_attr.successor_id is None
+
+
+def test_deprecated_entity_with_successor() -> None:
+    """Verify deprecated entities can reference their successor."""
+    from datetime import datetime
+
+    store = InMemoryStore[str, CatalogEntity]()
+    repo = CatalogRepository(store)
+
+    # Create deprecated entity
+    old_entity = CatalogEntity(
+        catalog_entity_id="customer_v1",
+        name="Customer (Legacy)",
+        deprecated=True,
+        successor_id="customer_v2",
+        deprecation_date=datetime(2025, 1, 15),
+        attributes=[
+            CatalogAttribute(
+                catalog_attribute_id="customer_id_v1",
+                name="ID",
+                entity_id="customer_v1",
+                data_type="string",
+            ),
+        ],
+    )
+
+    # Create successor entity
+    new_entity = CatalogEntity(
+        catalog_entity_id="customer_v2",
+        name="Customer",
+        description="Improved customer entity with additional fields",
+        attributes=[
+            CatalogAttribute(
+                catalog_attribute_id="customer_id_v2",
+                name="ID",
+                entity_id="customer_v2",
+                data_type="uuid",
+            ),
+        ],
+    )
+
+    repo.put_entity(old_entity)
+    repo.put_entity(new_entity)
+
+    # Verify deprecated entity has successor info
+    retrieved_old = repo.get_entity("customer_v1")
+    assert retrieved_old is not None
+    assert retrieved_old.deprecated is True
+    assert retrieved_old.successor_id == "customer_v2"
+    assert retrieved_old.deprecation_date == datetime(2025, 1, 15)
+
+    # Verify successor entity exists and is not deprecated
+    retrieved_new = repo.get_entity("customer_v2")
+    assert retrieved_new is not None
+    assert retrieved_new.deprecated is False
+    assert retrieved_new.successor_id is None

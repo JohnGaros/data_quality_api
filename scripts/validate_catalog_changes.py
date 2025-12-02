@@ -112,6 +112,14 @@ def validate_no_entity_breaking_changes(
                 f"Domain changes are semantic. Create new entity ID instead."
             )
 
+    # Check: newly deprecated entity should have successor_id
+    if new_entity.get("deprecated", False) and not old_entity.get("deprecated", False):
+        if not new_entity.get("successor_id"):
+            print(
+                f"  ⚠ Warning: Entity {entity_id} deprecated without successor_id. "
+                f"Consider adding successor_id to help consumers migrate."
+            )
+
 
 def validate_no_attribute_breaking_changes(
     old_attr: Dict[str, Any], new_attr: Dict[str, Any]
@@ -149,8 +157,16 @@ def validate_no_attribute_breaking_changes(
                 f"Old: {old_value}, New: {new_value}"
             )
 
+    # Check: newly deprecated attribute should have successor_id
+    if new_attr.get("deprecated", False) and not old_attr.get("deprecated", False):
+        if not new_attr.get("successor_id"):
+            print(
+                f"  ⚠ Warning: Attribute {attr_id} deprecated without successor_id. "
+                f"Consider adding successor_id to help consumers migrate."
+            )
+
     # Non-breaking changes allowed (informational only)
-    non_breaking_fields = ["tags", "format", "description", "metadata"]
+    non_breaking_fields = ["tags", "format", "description", "metadata", "successor_id", "deprecation_date"]
     changed_fields = []
 
     for field in non_breaking_fields:
