@@ -97,6 +97,7 @@ graph LR
 - `infra_libraries/` — declarative infra profiles covering storage/compute/retention expectations per dataset.
 - `governance_libraries/` — governance policies (PII classifications, retention/access) referenced from contracts.
 - `action_libraries/` — reusable post-job ActionProfiles (notifications, lineage events, webhooks, ticketing).
+- `catalog_libraries/` — authoring layer for the semantic catalog; YAML definitions for canonical entities/attributes that contracts map into.
 - `infra/` — deployment assets for Azure, Kubernetes, and CI/CD pipelines.
 - `tests/` — automated checks to prove the platform works as expected.
 - `scripts/` — helper scripts for local setup, data seeding, and maintenance.

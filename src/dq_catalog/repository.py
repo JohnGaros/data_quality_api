@@ -5,7 +5,7 @@ abstracting the underlying persistence layer (Store) to support future sync
 with external systems (e.g., Collibra, Postgres).
 """
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from dq_catalog.models import CatalogEntity
 from dq_stores.base import Store
@@ -26,6 +26,19 @@ class CatalogRepository:
                    The key is the catalog_entity_id.
         """
         self._store = store
+        self._attribute_index: Dict[str, str] = {}  # attr_id -> entity_id
+        self._rebuild_index()
+
+    def _rebuild_index(self) -> None:
+        """Build in-memory index of attribute_id -> entity_id.
+
+        This method scans all entities and populates the attribute index
+        for O(1) attribute lookups. Called on initialization and when needed.
+        """
+        self._attribute_index.clear()
+        for entity in self.list_entities():
+            for attr in entity.attributes:
+                self._attribute_index[attr.catalog_attribute_id] = entity.catalog_entity_id
 
     def get_entity(self, catalog_entity_id: str) -> Optional[CatalogEntity]:
         """Retrieve a catalog entity by its immutable ID.
@@ -50,6 +63,9 @@ class CatalogRepository:
             entity: The CatalogEntity to persist.
         """
         self._store.put(entity.catalog_entity_id, entity)
+        # Update index for all attributes in this entity
+        for attr in entity.attributes:
+            self._attribute_index[attr.catalog_attribute_id] = entity.catalog_entity_id
 
     def list_entities(self) -> List[CatalogEntity]:
         """List all catalog entities in the global catalog.
@@ -62,8 +78,8 @@ class CatalogRepository:
     def get_attribute(self, catalog_attribute_id: str) -> Optional[CatalogEntity]:
         """Retrieve the parent entity that contains the given attribute ID.
 
-        Note: This is a scan operation unless the store supports secondary indexing.
-        For MVP, we scan. In production, this should be optimized.
+        This method uses an in-memory attribute index for O(1) lookup performance.
+        The index maps attribute_id -> entity_id and is maintained automatically.
 
         Args:
             catalog_attribute_id: The unique identifier for the attribute.
@@ -71,9 +87,8 @@ class CatalogRepository:
         Returns:
             The parent CatalogEntity containing the attribute, or None.
         """
-        # TODO: Optimize this with a secondary index or dedicated AttributeStore
-        for entity in self.list_entities():
-            for attr in entity.attributes:
-                if attr.catalog_attribute_id == catalog_attribute_id:
-                    return entity
+        # O(1) lookup via index, then O(1) entity fetch
+        entity_id = self._attribute_index.get(catalog_attribute_id)
+        if entity_id:
+            return self.get_entity(entity_id)
         return None

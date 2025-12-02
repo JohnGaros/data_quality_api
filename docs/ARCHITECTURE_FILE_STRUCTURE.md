@@ -32,6 +32,7 @@ data_quality_api/
 ├── schema_libraries/   # Schema/taxonomy authoring
 ├── infra_libraries/    # Infrastructure profile authoring
 ├── governance_libraries/ # Governance policy authoring
+├── catalog_libraries/  # Semantic catalog authoring (entities/attributes)
 ├── scripts/            # Utility scripts (run, seed, migrate)
 ├── infra/              # Deployment, containers, CI/CD
 ├── docs/               # Documentation (architecture, guides)
@@ -47,6 +48,7 @@ data_quality_api/
 
 - `src/` is the core codebase — designed as a modular Python package.
 - `configs/` holds environment-specific settings (logging, env vars, external upload config samples).
+- `*_libraries/` directories are authoring layers for contracts, rules, schemas, infra profiles, governance policies, actions, and the semantic catalog (YAML/JSON/Excel → canonical JSON).
 - `scripts/` provides developer and deployment utilities.
 - `infra/` contains all infrastructure-related manifests (containers, pipelines, etc.).
 - `docs/` houses architectural documentation and developer guides.
@@ -310,18 +312,21 @@ This layer underpins governance by supporting audit evidence, compliance tagging
 
 ### 4.9 `dq_catalog/` — Semantic Data Catalog
 
-**Purpose:** Defines canonical entities/attributes/relationships that producer feeds map into so rules/governance can be authored once and reused across tenants.
+**Purpose:** Runtime registry layer for the semantic data catalog. Provides models, loaders, and repository interfaces to persist and query canonical entities/attributes/relationships.
 
 ```text
 dq_catalog/
 ├── models.py       # CatalogEntity, CatalogAttribute, CatalogRelationship
-├── repository.py   # (planned) Postgres-backed persistence
-├── api.py          # (planned) Read-only catalog queries
-└── loader.py       # (planned) YAML/JSON authoring for catalog entries
+├── loader.py       # CatalogLoader: parses YAML from catalog_libraries/
+├── repository.py   # CatalogRepository: in-memory and future Postgres persistence
+└── __init__.py     # Module exports
 ```
 
-- Contracts reference catalog entity/attribute IDs on datasets/columns to align producer schemas to the semantic model.
-- Future registry and API layers will expose catalog lookups to UIs and engines.
+- **models.py:** Pydantic models for `CatalogEntity`, `CatalogAttribute`, and `CatalogRelationship` with versioning support
+- **loader.py:** `CatalogLoader.load_directory()` reads all YAML files from `catalog_libraries/` and converts to models
+- **repository.py:** `CatalogRepository` provides put/get interfaces for entities and attributes (in-memory default, Postgres planned)
+- Contracts reference catalog entity/attribute IDs on datasets/columns to align producer schemas to the semantic model
+- YAML authoring happens in `catalog_libraries/`; this module is the runtime consumer
 
 ---
 
@@ -565,6 +570,32 @@ Author reusable infrastructure/retention profiles (storage, compute, deployment 
 ### `governance_libraries/`
 
 Author governance policies (PII classifications, retention/access, legal tags) in YAML/JSON/Excel. Data contracts reference them with `GovernanceProfileRef`; registries persist canonical JSON for enforcement/audit.
+
+---
+
+### `catalog_libraries/`
+
+**Authoring layer for the semantic data catalog.** Contains YAML definitions for canonical entities and attributes that form the semantic layer.
+
+```text
+catalog_libraries/
+├── customer_domain.yaml
+├── product_domain.yaml
+└── ...
+```
+
+- Each YAML file defines entities with their attributes, following the append-only versioning pattern
+- `catalog_entity_id` and `catalog_attribute_id` must be unique and immutable
+- Data contracts reference these IDs via `catalog_entity_ids` (on datasets) and `catalog_attribute_id` (on columns)
+- The `dq_catalog.loader.CatalogLoader` parses these YAML files into `CatalogEntity` and `CatalogAttribute` models
+- Run `python scripts/seed_catalog.py` to load definitions into the catalog repository
+
+**Versioning (Append-Only):**
+- Never change the semantic meaning of an existing ID
+- For definition changes, create a new versioned ID (e.g., `customer_email_v2`)
+- Mark old IDs as `deprecated: true` in YAML
+
+**Purpose:** Enables producer-specific feeds to map into a shared semantic model so validation rules and governance policies can be authored once and reused across tenants/datasets.
 
 ---
 

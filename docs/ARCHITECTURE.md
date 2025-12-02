@@ -5,7 +5,7 @@
 - **Goal:** Validate customer data files against shared business rules while maintaining audit-ready lineage.
 - **Interfaces:** FastAPI-based REST layer (`src/dq_api/`), Azure Blob Storage for file persistence, Azure AD for authentication, and optional external upload orchestrators.
 - **Tenancy:** All services operate in a multi-tenant context; configuration and metadata are scoped per tenant.
-- **Ground truth:** DataContracts + orthogonal libraries (`rule_libraries/`, `schema_libraries/`, `infra_libraries/`, `governance_libraries/`, `action_libraries/`) + the semantic catalog (`dq_catalog/`) are the only configuration mechanisms allowed. Everything else consumes their canonical JSON.
+- **Ground truth:** DataContracts + orthogonal libraries (`rule_libraries/`, `schema_libraries/`, `infra_libraries/`, `governance_libraries/`, `action_libraries/`, `catalog_libraries/`) + the semantic catalog runtime (`dq_catalog/`) are the only configuration mechanisms allowed. Everything else consumes their canonical JSON.
 
 ### 1.1 How to navigate this document
 
@@ -28,7 +28,8 @@ Throughout this document, directory names are referenced in backticks so you can
 | Profiling module                  | `src/dq_profiling/`                                              | Profiling engine/context builder, stats exports                         | `docs/diagrams/profiling_context.mmd` (planned)            |
 | Rule libraries                    | `rule_libraries/`                                                | Authoring validation/profiling/cleansing rules                          | `docs/rule_authoring.md` (planned)                         |
 | Schema/Infra/Governance libraries | `schema_libraries/`, `infra_libraries/`, `governance_libraries/` | Reusable schemas, infra profiles, governance policies                   | `docs/CONTRACT_DRIVEN_ARCHITECTURE.md`                     |
-| Data catalog                      | `src/dq_catalog/`                                                | Canonical entities/attributes, relationships, mapping helpers           | `src/dq_catalog/models.py`                                 |
+| Catalog library (authoring)       | `catalog_libraries/`                                             | Authoring YAML for semantic catalog entities/attributes                 | `catalog_libraries/README.md`                              |
+| Data catalog (runtime)            | `src/dq_catalog/`                                                | Catalog registry, loader, repository for entities/attributes            | `src/dq_catalog/models.py`                                 |
 | Data contracts                    | `src/dq_contracts/`                                              | Contract registry, canonical JSON persistence, bundling                 | `docs/CONTRACT_DRIVEN_ARCHITECTURE.md`                     |
 | Rule engine                       | `src/dq_core/engine/`                                            | Evaluation of rule bindings inside profiling contexts                   | `docs/reference/DQ_RULES.md`                               |
 | Metadata layer                    | `src/dq_metadata/`                                               | Lineage, audit events, profiling snapshots, reporting views             | `docs/reference/METADATA_PILLARS.md`                       |
@@ -53,6 +54,7 @@ flowchart LR
         INFRALIB[infra_libraries]
         GOVLIB[governance_libraries]
         ACTIONLIB[action_libraries]
+        CATALOGLIB[catalog_libraries]
     end
 
     subgraph Registry Layer
@@ -89,6 +91,7 @@ flowchart LR
     INFRALIB --> CONTRACTS
     GOVLIB --> CONTRACTS
     ACTIONLIB --> ACTIONS
+    CATALOGLIB --> CATALOG
 
     CONTRACTS --> CATALOG
     CONTRACTS --> CLEANSING
@@ -130,7 +133,8 @@ flowchart LR
 - **Profiling Module (`dq_profiling/`):** Owns profiling job models, snapshot builders, and helpers that convert cleansing outputs into profiling-driven validation contexts. Provides a dedicated `ProfilingEngine`, context builder, and API placeholders so profiling can evolve independently from rule execution.
 - **Rule Libraries (`rule_libraries/`):** Authoring layer where validation/profiling/cleansing rule catalogs and mapping templates live in YAML/JSON/Excel; loaders validate structure and emit Pydantic models plus canonical JSON for downstream registry use.
 - **Schema/Infra/Governance Libraries (`schema_libraries/`, `infra_libraries/`, `governance_libraries/`):** Authoring layers for reusable schemas/taxonomies, infra profiles (storage/compute/retention), and governance policies (PII classifications, retention/access). Each will mirror the rule library pattern: author in YAML/JSON/Excel, validate, emit canonical JSON.
-- **Data Catalog (`dq_catalog/`):** Semantic layer defining canonical entities/attributes and relationships. Contracts map producer-specific fields to these catalog attributes so rules/governance can be authored once and reused across feeds.
+- **Catalog Library (`catalog_libraries/`):** Authoring layer for the semantic data catalog. Contains YAML definitions for canonical entities and attributes following append-only versioning. Loaded into runtime via `dq_catalog.loader.CatalogLoader` and `scripts/seed_catalog.py`.
+- **Data Catalog Runtime (`dq_catalog/`):** Registry layer providing models, loader, and repository interfaces for the semantic catalog. Contracts map producer-specific fields to catalog entity/attribute IDs so rules/governance can be authored once and reused across feeds.
 - **Data Contract Layer (`dq_contracts/`):** Registry layer that persists canonical contracts, datasets, rule templates, bindings, and now references to schema/infra/governance profiles and catalog mappings into Postgres (JSONB), exposing materialized bundles to engines and APIs.
 - **Rule Engine (`dq_core/engine/`):** Builds profiling-driven validation contexts (via `dq_profiling`) before executing rules and emitting metadata events. When invoked for contract-driven jobs it pulls dataset contracts and binding definitions from `dq_contracts` instead of ad-hoc configs.
 - **Metadata Layer (`dq_metadata/`):** Persists job lineage, profiling context snapshots, rule versions, and audit events. Provides querying interfaces used by dashboards and compliance exports.
@@ -169,8 +173,9 @@ Contract-driven orchestration ensures that rules, schemas, and lifecycle metadat
 
 ### 2.5 Composed contracts (libraries + catalog)
 
-- **Orthogonal libraries:** Rules (`rule_libraries`), schemas (`schema_libraries`), infra profiles (`infra_libraries`), and governance profiles (`governance_libraries`) are authored separately and versioned independently. Each emits canonical JSON via library loaders.
-- **Semantic catalog:** `dq_catalog` defines canonical entities/attributes/relationships. Contracts map producer fields to catalog attributes so rules/governance authored at the catalog level can be reused across feeds.
+- **Orthogonal libraries:** Rules (`rule_libraries`), schemas (`schema_libraries`), infra profiles (`infra_libraries`), governance profiles (`governance_libraries`), and actions (`action_libraries`) are authored separately and versioned independently. Each emits canonical JSON via library loaders.
+- **Semantic catalog authoring:** `catalog_libraries` contains YAML definitions for canonical entities and attributes following append-only versioning. `dq_catalog.loader.CatalogLoader` parses these into Pydantic models and persists via `CatalogRepository`.
+- **Semantic catalog runtime:** `dq_catalog` provides the registry layer (models, loader, repository) for the semantic catalog. Contracts map producer fields to catalog entity/attribute IDs so rules/governance authored at the catalog level can be reused across feeds.
 - **Contract composition:** `DataContract` holds references (`SchemaRef`, `RuleSetRef`, `InfraProfileRef`, `GovernanceProfileRef`) plus catalog mappings (`catalog_entity_ids` on datasets, `catalog_attribute_id` on columns). At runtime the registry materialises a bundle with resolved schema/rules/infra/governance profiles and catalog mappings for engines and IaC to consume.
 
 ### 2.6 Runtime SDK & Context Facade
@@ -284,3 +289,31 @@ For a detailed file-by-file breakdown, see `docs/ARCHITECTURE_FILE_STRUCTURE.md`
 - Contract-driven rationale and governance principles are in `docs/CONTRACT_DRIVEN_ARCHITECTURE.md`.
 - The book `docs/reference/DrivingDataQualityWithDataContracts.pdf` presents the contract-driven architecture in depth, including practical producer/consumer alignment patterns.
 - Pending enhancements (profiling hardening, upload orchestration, action executor catalog) are tracked in `docs/BACKLOG.md`.
+
+## 11. Planning System & Development Workflow
+
+This project uses a hierarchical planning system (Project → Milestones → Epics → Features) to track implementation progress and enable fast context restoration in development workflows.
+
+**Key components:**
+- **specs/PROJECT_ROADMAP.md** - Overall project progress across milestones
+- **specs/milestones/** - Milestone directories (M1_MVP_FOUNDATION, M2_SECURITY_COMPLIANCE, M3_SCALE_OPERATIONS)
+- **epics/** - Multi-feature initiatives within each milestone
+- **features/** - Atomic implementation units with IMPLEMENTATION.md, TASKS.md, and .checkpoint files
+
+**Checkpoint-based progress tracking:**
+- Each feature has a `.checkpoint` YAML file tracking phase-level progress, time spent, blockers, and status
+- Checkpoints are gitignored (developer-local state) and updated via `/planning/checkpoint` slash commands
+- Progress aggregation script `scripts/parse_checkpoints.py` generates project-wide dashboards
+
+**Slash commands for rapid context restoration:**
+- `/planning/resume` - Restore work context after `/clear` in < 10 seconds (loads active checkpoint + minimal context)
+- `/planning/status` - Show current feature, phase, and next task
+- `/planning/checkpoint` - Update progress (complete tasks, move to next phase, add blockers)
+- `/planning/progress` - View project-wide dashboard across all milestones/epics/features
+
+**Architecture integration:**
+- Feature IMPLEMENTATION.md files include "Architecture Context" sections linking to relevant architecture docs
+- Planning system is documented in `CLAUDE.md` under "Planning System"
+- See `specs/README.md` for complete planning hierarchy documentation
+
+This planning approach minimizes context loss during development and provides clear visibility into implementation progress across the entire platform.
