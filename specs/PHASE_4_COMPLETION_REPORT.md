@@ -23,23 +23,23 @@ The hierarchical planning system for the Wemetrix Data Quality Platform is **ful
 
 **Phase 2 - Core Commands:**
 ```bash
-~/.claude/commands/planning/resume.md      (2.2K) - Context restoration after /clear
-~/.claude/commands/planning/status.md      (1.4K) - Current feature orientation
-~/.claude/commands/planning/checkpoint.md  (4.3K) - Progress updates
-~/.claude/commands/planning/progress.md    (1.8K) - Project-wide dashboard
+.claude/planning/resume.md      (2.2K) - Context restoration after /clear
+.claude/planning/status.md      (1.4K) - Current feature orientation
+.claude/planning/checkpoint.md  (4.3K) - Progress updates
+.claude/planning/progress.md    (1.8K) - Project-wide dashboard
 ```
 
 **Phase 3 - Scaffolding Commands:**
 ```bash
-~/.claude/commands/planning/new-feature.md    (7.7K) - Create feature scaffold
-~/.claude/commands/planning/new-epic.md       (5.4K) - Create epic scaffold
-~/.claude/commands/planning/new-milestone.md  (6.1K) - Create milestone scaffold
-~/.claude/commands/planning/goto-feature.md   (4.8K) - Switch active feature
+.claude/planning/new-feature.md    (7.7K) - Create feature scaffold
+.claude/planning/new-epic.md       (5.4K) - Create epic scaffold
+.claude/planning/new-milestone.md  (6.1K) - Create milestone scaffold
+.claude/planning/goto-feature.md   (4.8K) - Switch active feature
 ```
 
 **Additional:**
 ```bash
-~/.claude/commands/planning/README.md (3.3K) - Planning system overview
+.claude/planning/README.md (3.3K) - Planning system overview
 ```
 
 ### ✅ Scripts Operational
@@ -465,7 +465,7 @@ The hierarchical planning system is **fully operational and production-ready**. 
 | **Architecture Integration** | `docs/ARCHITECTURE.md` - Section 11 | How planning fits |
 | **Validation** | `scripts/validate_checkpoints.py` | Schema checking |
 | **Progress Dashboard** | `scripts/parse_checkpoints.py` | Aggregated view |
-| **Commands Reference** | `~/.claude/commands/planning/README.md` | All commands |
+| **Commands Reference** | `.claude/planning/README.md` | All commands |
 
 ---
 

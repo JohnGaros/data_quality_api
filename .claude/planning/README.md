@@ -58,12 +58,19 @@ All commands are located in `.claude/planning/`
    - Park item: `/planning/session-notes --park "reminder"`
    - Clear: `/planning/session-notes --clear`
 
+10. **`/planning/brainstorm`** - Interactive exploration session
+    - New topic: `/planning/brainstorm <topic>`
+    - Resume: `/planning/brainstorm --continue`
+    - Save to draft: `/planning/brainstorm --save`
+    - Feature focus: `/planning/brainstorm --feature <name>`
+    - Epic focus: `/planning/brainstorm --epic <name>`
+
 ### Scaffolding Commands
 
-10. **`/planning/new-feature`** - Create feature from template
-11. **`/planning/new-epic`** - Create epic from template
-12. **`/planning/new-milestone`** - Create milestone from template
-13. **`/planning/goto-feature`** - Switch feature contexts
+11. **`/planning/new-feature`** - Create feature from template
+12. **`/planning/new-epic`** - Create epic from template
+13. **`/planning/new-milestone`** - Create milestone from template
+14. **`/planning/goto-feature`** - Switch feature contexts
 
 ## Checkpoint Command Flags
 
@@ -161,7 +168,7 @@ All commands are located in `.claude/planning/`
 
 ## Success Indicators
 
-- 13 slash commands available
+- 14 slash commands available
 - Automatic time tracking working
 - Progress calculation accurate
 - Atomic checkpoint writes
@@ -207,6 +214,127 @@ All commands are located in `.claude/planning/`
 | `/planning/drafts` | List all drafts | < 3s |
 | `/planning/promote` | Draft → epic/feature | 1-2 min |
 | `/planning/session-notes` | Session scratch | < 5s |
+| `/planning/brainstorm` | Interactive exploration | varies |
 | `/planning/new-feature` | Scaffold feature | < 2 min |
 | `/planning/new-epic` | Scaffold epic | < 2 min |
 | `/planning/goto-feature` | Switch context | < 5s |
+
+---
+
+## Command Reference (Glossary)
+
+### `/planning/idea`
+
+Capture a rough idea to IDEAS.md for later exploration.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<description>` | Yes | The idea text to capture |
+
+**Behavior:**
+
+- Assigns auto-incrementing ID (IDEA-001, IDEA-002, etc.)
+- Timestamps the entry
+- Sets status to `new`
+
+**Example:** `/planning/idea Add real-time validation feedback via WebSockets`
+
+### `/planning/draft`
+
+Create or open a draft exploration document.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<id\|name>` | Yes | Either `IDEA-NNN` to link to existing idea, or descriptive name |
+
+**Behavior:**
+
+- Creates `DRAFT_<name>.md` in `specs/drafts/explorations/`
+- Updates `.drafts_index.json` with draft metadata
+- If linked to IDEA, updates idea status to `drafting`
+- Opens existing draft if already created
+
+**Example:** `/planning/draft IDEA-001` or `/planning/draft advanced_caching`
+
+### `/planning/drafts`
+
+Display dashboard of all captured ideas and draft explorations.
+
+**Parameters:** None
+
+**Behavior:**
+
+- Parses IDEAS.md for all idea entries
+- Reads `.drafts_index.json` for draft status
+- Shows tabular view with status, ID, summary, dates
+- Indicates active draft
+
+### `/planning/promote`
+
+Promote a validated draft to formal epic or feature.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<draft>` | Yes | Draft ID (e.g., `DRAFT_advanced_caching` or just `advanced_caching`) |
+
+**Behavior:**
+
+- Validates promotion criteria checklist
+- Prompts for target placement:
+  - **A)** New Epic under milestone
+  - **B)** New Feature under epic
+  - **C)** Enhancement to existing feature
+- Creates IMPLEMENTATION.md, TASKS.md, .checkpoint
+- Updates draft and linked idea status to `promoted`
+
+**Example:** `/planning/promote advanced_caching`
+
+### `/planning/session-notes`
+
+Manage ephemeral session scratch notes (gitignored).
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| (none) | - | Display current session notes |
+| `--add <note>` | - | Add a scratch note |
+| `--context <focus>` | - | Set active context/focus |
+| `--park <item>` | - | Add to parking lot (don't forget) |
+| `--file <path>` | - | Track file being explored |
+| `--clear` | - | Reset all session notes |
+
+**Behavior:**
+
+- Reads/writes `.session_notes` YAML file
+- Timestamps all updates
+- Notes persist until cleared or session ends
+
+**Example:** `/planning/session-notes --add "FastAPI has native WebSocket support"`
+
+### `/planning/brainstorm`
+
+Start interactive brainstorming session with guided exploration.
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<topic>` | - | Start new brainstorm on topic |
+| `--continue` | - | Resume active brainstorm from session notes |
+| `--save` | - | Save session notes to active draft |
+| `--feature <name>` | - | Brainstorm modifications to existing feature |
+| `--epic <name>` | - | Brainstorm new features for existing epic |
+
+**Behavior:**
+
+- Searches codebase for relevant context
+- Presents structured exploration options
+- Captures insights to session notes automatically
+- Enables live plan modification with confirmation
+
+**Example:** `/planning/brainstorm real-time validation feedback`
+
+### Status Values
+
+**Ideas:** `new` → `drafting` → `promoted` | `archived`
+
+**Drafts:** `exploring` → `ready` → `promoted` | `archived`
+
+**Features:** `not_started` → `in_progress` → `completed` | `blocked`
