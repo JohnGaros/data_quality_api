@@ -5,5 +5,14 @@ __pycache__/
 .DS_Store
 docs/.DS_Store
 docs/diagrams/.DS_Store
-docs/diagrams/data_quality_platform.png
+
 CATALOG_REFACTOR_PLAN.md
+
+# Planning system - local state only
+specs/.checkpoints/
+specs/**/.checkpoint
+
+# Brainstorming session state (local only)
+specs/drafts/.session_notes
+specs/drafts/.session_notes_archive/
+specs/drafts/.drafts_index.json
