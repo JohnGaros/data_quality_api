@@ -11,4 +11,18 @@ Capture rough ideas here. Promote promising ones with `/planning/draft` or `/pla
 
 ---
 
-<!-- Next ID: IDEA-001 -->
+## IDEA-001: Semantic Model Authoring (Layer-First Catalog)
+
+**Status:** draft_created
+**Created:** 2025-12-03
+**Draft:** `explorations/DRAFT_semantic_model_authoring.md`
+
+Reorganize the semantic catalog by pipeline layer (bronze/silver/gold) rather than
+business domain. Derive catalog entities from actual datasets (Excel/CSV, Postgres DDL)
+used in credit/customer KPI analytics.
+
+**Next:** Add example datasets to `examples/datasets/`, then analyze to draft YAML.
+
+---
+
+<!-- Next ID: IDEA-002 -->
