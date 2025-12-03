@@ -600,6 +600,469 @@ EOF
 
 ---
 
+## Example 8: Dynamic Brainstorming Workflow
+
+**Scenario:** You're implementing a feature when you realize a better architectural approach exists. Instead of continuing with a potentially suboptimal implementation, you use brainstorming commands to explore alternatives and adjust the plan.
+
+### Step 1: Capture the Idea Mid-Implementation
+
+You're working on `api_upload_endpoints` Phase 3 when you realize caching could significantly improve performance.
+
+```bash
+/planning/idea Add Redis caching layer for contract resolution - current approach makes DB call per upload
+```
+
+**What happens:**
+- New idea appended to `specs/drafts/IDEAS.md` as IDEA-003
+- Status set to `new`
+- Timestamp recorded
+- Your current feature work is uninterrupted
+
+**Output:**
+```
+Captured: IDEA-003 - Add Redis caching layer for contract resolution
+
+Location: specs/drafts/IDEAS.md
+
+Next steps:
+- Explore further: /planning/draft IDEA-003
+- View all ideas: Read specs/drafts/IDEAS.md
+- Promote directly: /planning/promote IDEA-003
+```
+
+### Step 2: Quick Exploration Without Leaving Current Work
+
+You can continue working but want to note context for later:
+
+```bash
+/planning/session-notes --park "IDEA-003: Check if Azure Cache for Redis fits infra profile"
+```
+
+**What happens:**
+- Item added to parking lot in session notes
+- Persists across conversation turns
+- Won't be forgotten during current work
+
+### Step 3: Finish Current Phase, Then Explore
+
+After completing the immediate task:
+
+```bash
+/planning/checkpoint --complete-task "Implement contract resolution endpoint"
+/planning/draft IDEA-003
+```
+
+**What happens:**
+- Creates `specs/drafts/explorations/DRAFT_redis_caching_layer.md`
+- Opens draft in exploration mode
+- Session timer starts
+
+**Output:**
+```
+Draft created: Redis caching layer for contract resolution
+
+Location: specs/drafts/explorations/DRAFT_redis_caching_layer.md
+Source: IDEA-003
+Status: exploring
+
+Quick Reference:
+# DRAFT: Redis caching layer for contract resolution
+
+**Draft ID:** redis_caching_layer
+**Status:** exploring
+**Source Idea:** IDEA-003
+**Created:** 2025-12-03T14:30:00Z
+
+## Problem
+
+Current approach makes DB call per upload for contract resolution...
+
+Suggested Next Steps:
+1. Fill in the "Hypothesis" section
+2. List 2-3 approach options
+3. Add questions to research
+4. When ready: /planning/promote redis_caching_layer
+```
+
+### Step 4: Interactive Brainstorming Session
+
+For deeper exploration:
+
+```bash
+/planning/brainstorm --feature api_upload_endpoints
+```
+
+**What happens:**
+- Loads current feature context (IMPLEMENTATION.md, TASKS.md, checkpoint)
+- Presents structured exploration options
+- Captures insights to session notes automatically
+
+**Output:**
+```
+================================================================================
+BRAINSTORM SESSION: Feature api_upload_endpoints
+================================================================================
+Session ID: brainstorm-2025-12-03-1445
+
+Brainstorming modifications to: api_upload_endpoints
+
+Current state:
+- Phase: 3 of 7
+- Status: in_progress
+- Progress: 35%
+
+Related exploration:
+- IDEA-003: Redis caching (exploring)
+- Draft: redis_caching_layer
+
+What would you like to explore?
+
+A) Add new tasks to current phase
+B) Add new phase for caching integration
+C) Modify approach for existing task
+D) Discuss blockers or alternatives
+E) Re-scope feature requirements
+
+Or just start talking and I'll follow your lead.
+================================================================================
+```
+
+### Step 5: Dynamically Add Phase to Feature
+
+During the brainstorm, you decide caching should be part of this feature. You can modify the plan in real-time:
+
+```
+User: Let's add a new phase for caching integration
+
+Claude: Adding Phase 8 to api_upload_endpoints:
+
+## Phase 8: Redis Caching Integration
+
+- [ ] Add Azure Cache for Redis connection config
+- [ ] Implement cache-aside pattern for contract lookups
+- [ ] Add cache invalidation on contract updates
+- [ ] Add cache hit/miss metrics
+
+Shall I update TASKS.md with this new phase?
+
+User: Yes, do it
+```
+
+**What happens:**
+- Claude updates `TASKS.md` with new Phase 8
+- Updates `IMPLEMENTATION.md` approach section
+- `.checkpoint` total phases count updated
+- Brainstorm session notes capture the decision
+
+### Step 6: Save Brainstorm Insights
+
+```bash
+/planning/brainstorm --save
+```
+
+**What happens:**
+- Session insights summarized
+- Appended to draft's Research Notes section
+- Parking lot items preserved
+
+**Output:**
+```
+Session Summary
+═══════════════════════════════════════════════════════════════════════════════
+
+Key Insights:
+1. Caching should be integrated into current feature, not separate epic
+2. Azure Cache for Redis fits infra profile
+3. Cache-aside pattern preferred over write-through
+
+Action Items:
+- [ ] Update infra_libraries/ with Redis profile
+- [ ] Add AZURE_REDIS_CONNECTION_STRING to Key Vault config
+
+Files Explored:
+- src/dq_api/routes/validation.py
+- src/dq_contracts/registry.py
+- infra_libraries/compute_profiles.yaml
+
+Saved to: specs/drafts/explorations/DRAFT_redis_caching_layer.md
+
+Draft status remains 'exploring' until promoted or archived.
+```
+
+---
+
+## Example 9: Epic-Level Brainstorming
+
+**Scenario:** You need to add multiple related features to an existing epic.
+
+### Step 1: Start Epic Brainstorm
+
+```bash
+/planning/brainstorm --epic E2_METADATA_LINEAGE
+```
+
+**Output:**
+```
+================================================================================
+BRAINSTORM SESSION: Epic E2_METADATA_LINEAGE
+================================================================================
+Session ID: brainstorm-2025-12-03-1530
+
+Brainstorming for epic: E2_METADATA_LINEAGE
+
+Current Status: In Progress - 15%
+
+Existing features:
+- metadata_registry (in_progress) - Core metadata storage
+- audit_trail (not_started) - Audit event tracking
+
+What would you like to explore?
+
+A) Propose new feature for this epic
+B) Re-prioritize existing features
+C) Discuss cross-feature dependencies
+D) Scope adjustment (add/remove features)
+
+Or describe what you're thinking about.
+================================================================================
+```
+
+### Step 2: Propose New Features
+
+```
+User: I want to add a feature for data lineage visualization
+
+Claude: Great idea! Let me capture this:
+
+Data lineage visualization would:
+- Show upstream/downstream dependencies
+- Visualize job execution flow
+- Support interactive exploration
+
+Questions to consider:
+1. Should this be real-time or batch-generated?
+2. What visualization library? (D3.js, Mermaid, etc.)
+3. Integration with existing dq_docs module?
+
+Shall I:
+A) Create a quick idea (IDEA-NNN)
+B) Create a full draft exploration
+C) Create feature directly (if scope is clear)
+D) Continue discussing
+```
+
+### Step 3: Create Feature from Brainstorm
+
+If the scope is clear:
+
+```bash
+User: C - scope is clear enough
+
+Claude: Creating feature in E2_METADATA_LINEAGE...
+
+Created: lineage_visualization
+Location: specs/milestones/M1_MVP_FOUNDATION/epics/E2_METADATA_LINEAGE/features/lineage_visualization/
+
+Files created:
+- IMPLEMENTATION.md (overview, approach from our discussion)
+- TASKS.md (7 phases scaffolded)
+- .checkpoint (initialized)
+
+Epic E2_METADATA_LINEAGE updated:
+- metadata_registry (in_progress)
+- audit_trail (not_started)
+- lineage_visualization (not_started) ← NEW
+
+Next steps:
+1. Review: Read specs/.../lineage_visualization/IMPLEMENTATION.md
+2. Customize tasks as needed
+3. Start when ready: /planning/goto-feature lineage_visualization
+```
+
+---
+
+## Example 10: Idea to Feature Pipeline
+
+**Scenario:** A quick idea evolves through exploration to become a planned feature.
+
+### Day 1: Capture Raw Idea
+
+```bash
+/planning/idea WebSocket support for real-time validation progress updates
+```
+
+### Day 2: Start Exploration
+
+```bash
+/planning/draft IDEA-004
+```
+
+Fill in the draft template with research:
+
+- **Option A:** WebSocket with Socket.IO
+- **Option B:** Server-Sent Events (SSE)
+- **Option C:** Azure SignalR Service
+
+### Day 3: Complete Research
+
+```bash
+/planning/draft --log "Benchmarked SSE vs WebSocket - SSE simpler for one-way"
+/planning/draft --log "Azure SignalR would add $50/mo cost - may be worth it for scale"
+```
+
+### Day 4: Promote to Feature
+
+```bash
+/planning/promote realtime_validation_progress
+```
+
+**Decision framework guides through:**
+
+1. **Scope assessment:** Medium (1-2 weeks)
+2. **Deliverables:** One (single cohesive implementation)
+3. **Existing epic:** E1_CORE_VALIDATION fits
+
+**Result:**
+```
+Promoted: Real-time validation progress
+
+**Created:** Feature in E1_CORE_VALIDATION
+**Location:** specs/milestones/M1_MVP_FOUNDATION/epics/E1_CORE_VALIDATION/features/realtime_validation_progress/
+
+**Files created:**
+- IMPLEMENTATION.md (populated from draft research)
+- TASKS.md (7 phases generated)
+- .checkpoint (initialized, time_spent: 45m carried from draft)
+
+**Source updated:**
+- Draft realtime_validation_progress → promoted
+- IDEA-004 → promoted
+
+**Next steps:**
+1. Review generated IMPLEMENTATION.md
+2. Customize TASKS.md phases
+3. Start work: /planning/goto-feature realtime_validation_progress
+```
+
+---
+
+## Example 11: Managing Multiple Drafts
+
+**Scenario:** You have several ideas in exploration and need to track them.
+
+### View All Drafts
+
+```bash
+/planning/drafts
+```
+
+**Output:**
+```
+================================================================================
+DRAFTS DASHBOARD
+================================================================================
+
+Active Draft: redis_caching_layer
+Time this session: 12m
+
+## Drafts (3)
+
+| Status     | ID                        | Summary                      | Time  |
+|------------|---------------------------|------------------------------|-------|
+| exploring  | redis_caching_layer       | Contract resolution caching  | 45m   |
+| ready      | batch_validation_api      | Bulk upload endpoint         | 120m  |
+| exploring  | graphql_endpoint          | Alternative API surface      | 15m   |
+
+## Ideas Not Yet Drafted (2)
+
+| ID       | Title                          | Created    | Tags           |
+|----------|--------------------------------|------------|----------------|
+| IDEA-005 | Webhook retry with backoff     | 2025-12-02 | api, resilience|
+| IDEA-006 | Contract diff visualization    | 2025-12-03 | docs, ui       |
+
+================================================================================
+
+Commands:
+- Open draft: /planning/draft {id}
+- Promote ready draft: /planning/promote batch_validation_api
+- Create from idea: /planning/draft IDEA-005
+- New idea: /planning/idea <description>
+```
+
+### Promote Ready Draft
+
+The `batch_validation_api` draft shows `ready` status (all decision criteria met):
+
+```bash
+/planning/promote batch_validation_api
+```
+
+Since criteria are complete, promotion proceeds directly to placement questions.
+
+---
+
+## Brainstorming Command Reference
+
+### Quick Commands
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `/planning/idea <desc>` | Capture rough idea | Tangential thought during work |
+| `/planning/session-notes --park "item"` | Save reminder | Don't forget this later |
+| `/planning/draft --log "note"` | Add exploration log | Capture research finding |
+
+### Exploration Commands
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `/planning/draft IDEA-NNN` | Start exploring idea | Ready to research further |
+| `/planning/draft {name}` | Open existing draft | Continue exploration |
+| `/planning/drafts` | View all drafts/ideas | Need overview of pipeline |
+| `/planning/brainstorm <topic>` | Interactive exploration | Open-ended exploration |
+| `/planning/brainstorm --feature X` | Feature brainstorm | Modify existing feature |
+| `/planning/brainstorm --epic X` | Epic brainstorm | Add features to epic |
+
+### Promotion Commands
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `/planning/promote {draft}` | Draft → feature/epic | Exploration complete |
+| `/planning/promote IDEA-NNN` | Idea → feature directly | Scope is clear |
+
+### State Flow
+
+```
+Idea (new)
+    ↓ /planning/draft IDEA-NNN
+Draft (exploring)
+    ↓ research, session-notes
+Draft (ready)
+    ↓ /planning/promote
+Feature (not_started)
+    ↓ /planning/goto-feature
+Feature (in_progress)
+```
+
+### Integration with Implementation Workflow
+
+The brainstorming system integrates seamlessly with implementation tracking:
+
+```bash
+# During implementation work
+/planning/checkpoint --complete-task "Add endpoint"
+
+# Quick idea without losing context
+/planning/idea Batch processing could be 10x faster with async
+
+# Back to implementation
+/planning/checkpoint --next-phase
+
+# Later - explore the idea
+/planning/draft IDEA-007
+```
+
+---
+
 ## Summary
 
 The planning system enables:
@@ -609,5 +1072,9 @@ The planning system enables:
 3. **Automatic time tracking** for better estimation
 4. **Blocker management** to surface impediments
 5. **Minimal overhead** through slash commands
+6. **Dynamic plan adjustment** via brainstorming commands
+7. **Idea-to-feature pipeline** for capturing and evolving rough ideas
 
 **Key insight:** The system loads < 500 lines for resume (vs 15,000+ full architecture reload), making it practical for daily use.
+
+**Brainstorming insight:** Ideas captured mid-implementation don't interrupt flow, and the `idea → draft → feature` pipeline ensures nothing gets lost while maintaining structured progression from rough concept to planned work.
