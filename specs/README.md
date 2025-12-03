@@ -107,6 +107,15 @@ specs/
 /planning/session-notes
 /planning/session-notes --add "note"
 /planning/session-notes --context "current focus"
+/planning/session-notes --park "don't forget this"
+/planning/session-notes --clear
+
+# Interactive brainstorming
+/planning/brainstorm <topic>              # New brainstorm session
+/planning/brainstorm --continue           # Resume active session
+/planning/brainstorm --save               # Save session to draft
+/planning/brainstorm --feature <name>     # Modify existing feature
+/planning/brainstorm --epic <name>        # Expand existing epic
 ```
 
 ## Current Milestones
@@ -339,6 +348,113 @@ Benefits of new structure:
 - Context restoration after `/clear`
 - Automatic time tracking and estimation improvement
 
+## Interactive Brainstorming Workflow
+
+The planning system supports real-time idea exploration and plan modification through conversational input.
+
+### Idea → Draft → Feature Pipeline
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Capture   │ →  │   Explore   │ →  │   Promote   │ →  │  Implement  │
+│             │    │             │    │             │    │             │
+│ /idea       │    │ /draft      │    │ /promote    │    │ /resume     │
+│ IDEAS.md    │    │ DRAFT_*.md  │    │ IMPL/TASKS  │    │ .checkpoint │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+### Quick Capture
+
+Capture rough ideas without breaking flow:
+
+```bash
+/planning/idea Add real-time validation feedback via WebSockets
+```
+
+Creates timestamped entry in `IDEAS.md` with unique ID (IDEA-001, etc.).
+
+### Draft Exploration
+
+Develop ideas into concrete proposals:
+
+```bash
+/planning/draft IDEA-001           # From existing idea
+/planning/draft advanced_caching   # Standalone draft
+```
+
+Creates `DRAFT_*.md` in `specs/drafts/explorations/` with:
+- Problem statement
+- Proposed approaches
+- Key questions to answer
+- Research notes
+- Promotion criteria checklist
+
+### Interactive Brainstorming
+
+Start a guided exploration session:
+
+```bash
+/planning/brainstorm real-time validation feedback
+```
+
+Features:
+- Automatic codebase exploration for context
+- Structured problem/approach/trade-off discussion
+- Session notes captured automatically
+- Save results to draft with `/planning/brainstorm --save`
+
+### Live Plan Modification
+
+Modify existing plans during brainstorming:
+
+```bash
+/planning/brainstorm --feature api_upload_endpoints   # Modify feature
+/planning/brainstorm --epic E1_CORE_VALIDATION        # Expand epic
+```
+
+Changes are validated and confirmed before applying:
+- Add tasks to TASKS.md
+- Update IMPLEMENTATION.md approach
+- Add new features to epics
+- Reprioritize work
+
+### Session Notes
+
+Ephemeral working memory (gitignored):
+
+```bash
+/planning/session-notes                    # View current notes
+/planning/session-notes --context "focus"  # Set active focus
+/planning/session-notes --add "insight"    # Add scratch note
+/planning/session-notes --park "remember"  # Don't forget item
+/planning/session-notes --clear            # Reset session
+```
+
+### Promotion
+
+When a draft is ready, promote to formal planning:
+
+```bash
+/planning/promote advanced_caching
+```
+
+Options:
+- **New Epic**: Create epic + first feature under milestone
+- **New Feature**: Create feature under existing epic
+- **Enhancement**: Add tasks to existing feature
+
+### Traceability
+
+All brainstorming activity maintains traceability:
+
+| Artifact | Links To |
+|----------|----------|
+| IDEA-NNN | → DRAFT_* (when drafted) |
+| DRAFT_* | → IDEA-NNN (origin), Feature (when promoted) |
+| Feature | ← DRAFT_* (source of truth for decisions) |
+
+Session History in each draft tracks exploration activity.
+
 ## Success Metrics
 
 **Quantitative:**
@@ -346,9 +462,11 @@ Benefits of new structure:
 - Context size loaded: < 500 lines (vs 15,000+ full reload)
 - Checkpoint accuracy: 100% parseable by script
 - Progress calculation: Accurate within 1%
+- Idea capture time: < 5 seconds
 
 **Qualitative:**
 - User feels oriented after `/planning/resume`
 - No manual navigation needed
 - Progress visible at all levels
 - Spec creation fast with templates
+- Brainstorming flows naturally into formal planning
