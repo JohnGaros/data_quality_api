@@ -6,14 +6,14 @@ You are helping the user switch to a different feature and load its context.
 
 1. Find the feature by name (search across all milestones/epics)
 2. Update `specs/.checkpoints/current.json` to point to this feature
-3. Load minimal context (similar to /planning/resume but for a different feature)
+3. Load minimal context (similar to /planning-resume but for a different feature)
 4. Display orientation summary
 
 ## Implementation Steps
 
 ### Step 1: Parse Feature Name from Command
 
-The user will invoke this as: `/planning/goto-feature {feature_name}`
+The user will invoke this as: `/planning-goto-feature {feature_name}`
 
 Extract the feature name from the command arguments.
 
@@ -37,7 +37,7 @@ Available features:
 - api_upload_endpoints
 [...list all features from checkpoint files...]
 
-Use: /planning/goto-feature <feature_name>
+Use: /planning-goto-feature <feature_name>
 ```
 
 ### Step 3: Read Feature Checkpoint
@@ -150,24 +150,24 @@ Show a concise summary:
 
 ## Quick Commands
 
-- Mark task complete: /planning/checkpoint --complete-task "description"
-- Move to next phase: /planning/checkpoint --next-phase
+- Mark task complete: /planning-checkpoint --complete-task "description"
+- Move to next phase: /planning-checkpoint --next-phase
 - View full plan: Read {FEATURE_PATH}/IMPLEMENTATION.md
 - View all tasks: Read {FEATURE_PATH}/TASKS.md
-- View progress: /planning/progress
+- View progress: /planning-progress
 ```
 
 ## Command Usage Examples
 
 ```bash
 # Switch to e2e_file_testing feature
-/planning/goto-feature e2e_file_testing
+/planning-goto-feature e2e_file_testing
 
 # Switch to core_rule_engine feature
-/planning/goto-feature core_rule_engine
+/planning-goto-feature core_rule_engine
 
 # Switch to api_upload_endpoints feature
-/planning/goto-feature api_upload_endpoints
+/planning-goto-feature api_upload_endpoints
 ```
 
 ## Error Handling
@@ -204,7 +204,7 @@ Please specify the full path or use a more specific name.
 Location: {feature_path}
 
 This feature may have been created manually. Create a checkpoint file using:
-/planning/new-feature
+/planning-new-feature
 ```
 
 ## Important Notes
@@ -213,5 +213,5 @@ This feature may have been created manually. Create a checkpoint file using:
 - Updates `specs/.checkpoints/current.json` (gitignored)
 - Loads minimal context (< 500 lines total)
 - Does NOT modify any feature state (read-only context switch)
-- Use `/planning/resume` after `/clear` to restore current context
-- Use `/planning/status` to see current feature without switching
+- Use `/planning-resume` after `/clear` to restore current context
+- Use `/planning-status` to see current feature without switching

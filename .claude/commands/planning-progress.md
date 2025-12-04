@@ -48,9 +48,9 @@ Blocked: [blocked] ([X]%)
 
 ### Next Steps
 
-- Resume work: /planning/resume
-- Start new feature: /planning/goto-feature [name]
-- Update progress: /planning/checkpoint
+- Resume work: /planning-resume
+- Start new feature: /planning-goto-feature [name]
+- Update progress: /planning-checkpoint
 ```
 
 **Alternative Output Format (if script returns detailed data):**

@@ -57,7 +57,7 @@ Progress: [tasks_completed]/[tasks_total] tasks
 
 {If no active feature:}
 No active feature.
-Use /planning/goto-feature to start one, or /planning/status to see all features.
+Use /planning-goto-feature to start one, or /planning-status to see all features.
 
 ---
 
@@ -76,30 +76,30 @@ Potential: [type] in [epic or "Unknown"]
 [List first 2 items if any]
 
 {If new ideas exist:}
-**New Ideas:** [count] captured (use /planning/drafts to review)
+**New Ideas:** [count] captured (use /planning-drafts to review)
 
 {If no brainstorming context:}
 No active drafts or session notes.
-Use /planning/idea to capture ideas or /planning/draft to start exploring.
+Use /planning-idea to capture ideas or /planning-draft to start exploring.
 
 ---
 
 ### Quick Commands
 
 **Implementation:**
-- Mark task complete: /planning/checkpoint --complete-task "description"
-- Move to next phase: /planning/checkpoint --next-phase
+- Mark task complete: /planning-checkpoint --complete-task "description"
+- Move to next phase: /planning-checkpoint --next-phase
 - Full context: Read [path to IMPLEMENTATION.md]
 
 **Brainstorming:**
-- View draft: /planning/draft [active_draft]
-- Session notes: /planning/session-notes
-- Capture idea: /planning/idea
-- All drafts: /planning/drafts
+- View draft: /planning-draft [active_draft]
+- Session notes: /planning-session-notes
+- Capture idea: /planning-idea
+- All drafts: /planning-drafts
 
 **Overview:**
-- Project progress: /planning/progress
-- Current status: /planning/status
+- Project progress: /planning-progress
+- Current status: /planning-status
 ```
 
 **CRITICAL REQUIREMENTS:**
@@ -112,7 +112,7 @@ Use /planning/idea to capture ideas or /planning/draft to start exploring.
 - Gracefully handle missing files (brainstorming files may not exist yet)
 
 **If checkpoint shows status = completed:**
-Suggest next feature in the epic or congratulate and show /planning/progress
+Suggest next feature in the epic or congratulate and show /planning-progress
 
 **If checkpoint shows status = blocked:**
 Highlight blockers prominently and suggest addressing them first
@@ -127,10 +127,10 @@ Focus the output on the active draft and session notes, suggest promoting when r
 No active work context found.
 
 Get started:
-- View features: /planning/status
-- Start feature: /planning/goto-feature {name}
-- Capture idea: /planning/idea
-- Create draft: /planning/draft
+- View features: /planning-status
+- Start feature: /planning-goto-feature {name}
+- Capture idea: /planning-idea
+- Create draft: /planning-draft
 
-Use /planning/progress for project-wide dashboard.
+Use /planning-progress for project-wide dashboard.
 ```

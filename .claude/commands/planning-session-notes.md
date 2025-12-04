@@ -6,22 +6,22 @@ You are helping the user manage session scratch notes that persist across `/clea
 
 ```bash
 # View current notes (default)
-/planning/session-notes
+/planning-session-notes
 
 # Add to scratch
-/planning/session-notes --add "note text"
+/planning-session-notes --add "note text"
 
 # Update active context
-/planning/session-notes --context "new focus area"
+/planning-session-notes --context "new focus area"
 
 # Add to parking lot
-/planning/session-notes --park "thing to not forget"
+/planning-session-notes --park "thing to not forget"
 
 # Add exploring file
-/planning/session-notes --exploring "path/to/file.py"
+/planning-session-notes --exploring "path/to/file.py"
 
 # Clear notes (start fresh)
-/planning/session-notes --clear
+/planning-session-notes --clear
 ```
 
 ## File Format
@@ -88,7 +88,7 @@ If last_updated exists, calculate time since last update.
 - {note}
 
 {If empty:}
-No scratch notes. Add with: /planning/session-notes --add "note"
+No scratch notes. Add with: /planning-session-notes --add "note"
 
 ---
 
@@ -98,7 +98,7 @@ No scratch notes. Add with: /planning/session-notes --add "note"
 - {file_path}
 
 {If empty:}
-No files tracked. Add with: /planning/session-notes --exploring "path"
+No files tracked. Add with: /planning-session-notes --exploring "path"
 
 ---
 
@@ -108,17 +108,17 @@ No files tracked. Add with: /planning/session-notes --exploring "path"
 - [ ] {item}
 
 {If empty:}
-Parking lot empty. Add with: /planning/session-notes --park "reminder"
+Parking lot empty. Add with: /planning-session-notes --park "reminder"
 
 ---
 
 ### Quick Commands
 
-- Add note: /planning/session-notes --add "note"
-- Set context: /planning/session-notes --context "focus"
-- Park item: /planning/session-notes --park "reminder"
-- Track file: /planning/session-notes --exploring "path"
-- Clear all: /planning/session-notes --clear
+- Add note: /planning-session-notes --add "note"
+- Set context: /planning-session-notes --context "focus"
+- Park item: /planning-session-notes --park "reminder"
+- Track file: /planning-session-notes --exploring "path"
+- Clear all: /planning-session-notes --clear
 ```
 
 ---
@@ -185,7 +185,7 @@ Active context updated.
 New context:
 {First 3 lines of context}
 
-Use /planning/session-notes to view all notes.
+Use /planning-session-notes to view all notes.
 ```
 
 ---
@@ -289,7 +289,7 @@ session_id: null
 last_updated: null
 
 active_context: |
-  No active context. Use /planning/session-notes --context "your focus" to set.
+  No active context. Use /planning-session-notes --context "your focus" to set.
 
 scratch: []
 
@@ -307,8 +307,8 @@ Session notes cleared.
 Previous notes archived to: specs/drafts/.session_notes_archive/{timestamp}.yaml
 
 Start fresh:
-- Set context: /planning/session-notes --context "focus"
-- Add notes: /planning/session-notes --add "note"
+- Set context: /planning-session-notes --context "focus"
+- Add notes: /planning-session-notes --add "note"
 ```
 
 ---
@@ -329,8 +329,8 @@ Session notes help you:
 - Park things you don't want to forget
 
 Get started:
-- Set context: /planning/session-notes --context "what you're working on"
-- Add note: /planning/session-notes --add "quick thought"
+- Set context: /planning-session-notes --context "what you're working on"
+- Add note: /planning-session-notes --add "quick thought"
 ```
 
 ---

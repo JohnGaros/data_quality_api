@@ -6,13 +6,13 @@ You are helping the user convert a draft exploration or idea into a formal epic 
 
 ```bash
 # Promote a draft
-/planning/promote advanced_caching
+/planning-promote advanced_caching
 
 # Promote an idea directly
-/planning/promote IDEA-001
+/planning-promote IDEA-001
 
 # Promote with pre-selected destination
-/planning/promote advanced_caching --epic E4_OPERATIONS --milestone M3_SCALE_OPERATIONS
+/planning-promote advanced_caching --epic E4_OPERATIONS --milestone M3_SCALE_OPERATIONS
 ```
 
 ## Your Task
@@ -42,7 +42,7 @@ Available drafts:
 Recent ideas:
 {List IDEA-NNN entries with status=new}
 
-Use: /planning/promote {draft_name} or /planning/promote IDEA-NNN
+Use: /planning-promote {draft_name} or /planning-promote IDEA-NNN
 ```
 
 ---
@@ -112,7 +112,7 @@ Use AskUserQuestion:
   - label: "Continue exploring", description: "Go back to draft"
   - label: "Cancel", description: "Exit without changes"
 
-If "Continue exploring" → exit with message to use `/planning/draft {slug}`
+If "Continue exploring" → exit with message to use `/planning-draft {slug}`
 If "Cancel" → exit with no changes
 
 ---
@@ -292,12 +292,12 @@ Promoted: {Title}
 **Next steps:**
 1. Review generated {IMPLEMENTATION.md | EPIC.md}
 2. Customize {TASKS.md | add features}
-3. Start work: /planning/goto-feature {feature_name}
+3. Start work: /planning-goto-feature {feature_name}
 
 **Quick commands:**
 - View: Read {path}/IMPLEMENTATION.md
-- Start: /planning/goto-feature {name}
-- Progress: /planning/progress
+- Start: /planning-goto-feature {name}
+- Progress: /planning-progress
 ```
 
 ---
@@ -313,7 +313,7 @@ Available drafts:
 - advanced_caching (exploring)
 - realtime_validation (new)
 
-Use: /planning/drafts to see all drafts
+Use: /planning-drafts to see all drafts
 ```
 
 ### Idea Not Found
@@ -325,7 +325,7 @@ Recent ideas:
 - IDEA-001: Advanced caching (draft_created)
 - IDEA-002: Real-time webhooks (new)
 
-Use: /planning/idea to capture a new idea
+Use: /planning-idea to capture a new idea
 ```
 
 ### Epic Already Exists

@@ -30,10 +30,10 @@ Location: [relative_path]
 
 ### Quick Actions
 
-- Resume work: /planning/resume
-- Update progress: /planning/checkpoint --complete-task "description"
-- View all features: /planning/progress
-- Switch feature: /planning/goto-feature [name]
+- Resume work: /planning-resume
+- Update progress: /planning-checkpoint --complete-task "description"
+- View all features: /planning-progress
+- Switch feature: /planning-goto-feature [name]
 ```
 
 **If no active feature:**
@@ -41,9 +41,9 @@ Location: [relative_path]
 ## No Active Feature
 
 To start working on a feature:
-1. View all features: /planning/progress
-2. Switch to a feature: /planning/goto-feature [name]
-3. Create new feature: /planning/new-feature
+1. View all features: /planning-progress
+2. Switch to a feature: /planning-goto-feature [name]
+3. Create new feature: /planning-new-feature
 
 Recent features:
 [List 3 most recently updated .checkpoint files with their status]

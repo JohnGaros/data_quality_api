@@ -4,7 +4,7 @@ You are helping the user quickly capture a new idea to the IDEAS.md log.
 
 ## Your Task
 
-1. Parse the idea description from command arguments (everything after `/planning/idea`)
+1. Parse the idea description from command arguments (everything after `/planning-idea`)
 2. If no description provided, ask for it using AskUserQuestion
 3. Read `specs/drafts/IDEAS.md` to find the next IDEA-NNN ID
 4. Generate today's date section if not present
@@ -15,7 +15,7 @@ You are helping the user quickly capture a new idea to the IDEAS.md log.
 
 ### Step 1: Get Idea Description
 
-The command format is: `/planning/idea <description>`
+The command format is: `/planning-idea <description>`
 
 If description is provided (non-empty after command):
 - Use it directly
@@ -82,19 +82,19 @@ Captured: IDEA-{NNN} - {Title}
 Location: specs/drafts/IDEAS.md
 
 Next steps:
-- Explore further: /planning/draft IDEA-{NNN}
+- Explore further: /planning-draft IDEA-{NNN}
 - View all ideas: Read specs/drafts/IDEAS.md
-- Promote directly: /planning/promote IDEA-{NNN}
+- Promote directly: /planning-promote IDEA-{NNN}
 ```
 
 ## Example Usage
 
 ```bash
 # With inline description
-/planning/idea Add caching for catalog lookups to reduce DB load
+/planning-idea Add caching for catalog lookups to reduce DB load
 
 # Interactive (no description)
-/planning/idea
+/planning-idea
 ```
 
 ## Important Notes

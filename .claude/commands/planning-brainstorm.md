@@ -124,7 +124,7 @@ $ARGUMENTS = Topic or context for brainstorming:
 During brainstorming, the following modifications can be made in real-time:
 
 ### Modifying Ideas (IDEAS.md)
-- Add new ideas with `/planning/idea`
+- Add new ideas with `/planning-idea`
 - Update status of existing ideas
 - Add tags or links to related concepts
 
@@ -179,7 +179,7 @@ Select [A/B/C/D/E]:
 ## Example Flow
 
 ```
-User: /planning/brainstorm real-time validation feedback
+User: /planning-brainstorm real-time validation feedback
 
 Claude: [Searches codebase, finds relevant files]
         [Presents brainstorm session intro]
@@ -196,7 +196,7 @@ Claude: [Explores integration points]
         [Parks action item: "Check Azure SignalR"]
         [Updates session context]
 
-User: /planning/brainstorm --save
+User: /planning-brainstorm --save
 
 Claude: [Presents summary]
         [Creates draft or adds to existing]

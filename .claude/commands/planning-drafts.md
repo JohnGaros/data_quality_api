@@ -52,7 +52,7 @@ Output this format:
    Source: {source_idea or "Created directly"}
 
 {If no active_draft:}
-No active draft. Use /planning/draft to create or open one.
+No active draft. Use /planning-draft to create or open one.
 
 ---
 
@@ -65,7 +65,7 @@ No active draft. Use /planning/draft to create or open one.
 | {draft3} | {status} | {time}m | {type}/{epic} | {idea} |
 
 {If no drafts:}
-No drafts yet. Create one with /planning/draft or /planning/draft IDEA-NNN.
+No drafts yet. Create one with /planning-draft or /planning-draft IDEA-NNN.
 
 ---
 
@@ -89,16 +89,16 @@ No drafts yet. Create one with /planning/draft or /planning/draft IDEA-NNN.
 - IDEA-{NNN}: {title} ({date})
 
 {If no new ideas:}
-No new ideas. Capture one with /planning/idea.
+No new ideas. Capture one with /planning-idea.
 
 ---
 
 ### Quick Commands
 
-- Capture idea: /planning/idea <description>
-- Create draft: /planning/draft
-- Open draft: /planning/draft {name}
-- Promote: /planning/promote {name}
+- Capture idea: /planning-idea <description>
+- Create draft: /planning-draft
+- Open draft: /planning-draft {name}
+- Promote: /planning-promote {name}
 - View ideas: Read specs/drafts/IDEAS.md
 ```
 
@@ -121,8 +121,8 @@ If both drafts and ideas are empty:
 No drafts or ideas yet.
 
 Get started:
-1. Capture an idea: /planning/idea <description>
-2. Or create a draft directly: /planning/draft
+1. Capture an idea: /planning-idea <description>
+2. Or create a draft directly: /planning-draft
 
 The brainstorming pipeline helps you:
 - Capture rough ideas quickly

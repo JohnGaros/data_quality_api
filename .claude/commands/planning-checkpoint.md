@@ -3,7 +3,7 @@
 **Command Format:**
 
 ```
-/planning/checkpoint [--flag] [value]
+/planning-checkpoint [--flag] [value]
 ```
 
 **Supported Flags:**
@@ -99,22 +99,22 @@ Time: [minutes] minutes
 
 ### Next Steps
 
-- Continue work: /planning/resume
-- View progress: /planning/progress
-- Update again: /planning/checkpoint [flag]
+- Continue work: /planning-resume
+- View progress: /planning-progress
+- Update again: /planning-checkpoint [flag]
 ```
 
 **If no flag provided:**
 Show usage help with examples:
 
 ```
-Usage: /planning/checkpoint [--flag] [value]
+Usage: /planning-checkpoint [--flag] [value]
 
 Examples:
-  /planning/checkpoint --complete-task "Implement save_profiling_snapshot()"
-  /planning/checkpoint --next-phase
-  /planning/checkpoint --add-blocker "Waiting for API approval"
-  /planning/checkpoint --complete-feature
+  /planning-checkpoint --complete-task "Implement save_profiling_snapshot()"
+  /planning-checkpoint --next-phase
+  /planning-checkpoint --add-blocker "Waiting for API approval"
+  /planning-checkpoint --complete-feature
 
 Available flags:
   --complete-task "description"  Mark task complete

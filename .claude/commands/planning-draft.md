@@ -6,16 +6,16 @@ You are helping the user create a new draft exploration spec or continue working
 
 ```bash
 # Create from idea
-/planning/draft IDEA-001
+/planning-draft IDEA-001
 
 # Create new draft (interactive)
-/planning/draft
+/planning-draft
 
 # Open existing draft
-/planning/draft advanced_caching
+/planning-draft advanced_caching
 
 # Add session log entry to current draft
-/planning/draft --log "Benchmarked queries - 50ms avg"
+/planning-draft --log "Benchmarked queries - 50ms avg"
 ```
 
 ## Your Task
@@ -43,7 +43,7 @@ Idea IDEA-{NNN} not found in specs/drafts/IDEAS.md
 Available ideas:
 [List recent ideas with status=new or status=exploring]
 
-Use: /planning/idea to capture a new idea first
+Use: /planning-idea to capture a new idea first
 ```
 
 ### Step 2: Generate Slug
@@ -180,12 +180,12 @@ Suggested Next Steps:
 1. Fill in the "Hypothesis" section
 2. List 2-3 approach options
 3. Add questions to research
-4. When ready: /planning/promote {slug}
+4. When ready: /planning-promote {slug}
 
 Commands:
-- Add session log: /planning/draft --log "notes"
-- View all drafts: /planning/drafts
-- Promote: /planning/promote {slug}
+- Add session log: /planning-draft --log "notes"
+- View all drafts: /planning-drafts
+- Promote: /planning-promote {slug}
 ```
 
 ---
@@ -243,7 +243,7 @@ Available drafts:
 - advanced_caching (exploring) - 45m spent
 - realtime_validation (new) - 0m spent
 
-Use: /planning/draft {name}
+Use: /planning-draft {name}
 ```
 
 ### Step 2: Set Active and Load
@@ -267,9 +267,9 @@ Session Log (recent):
 [Show last 3 session log entries]
 
 Commands:
-- Add log: /planning/draft --log "notes"
-- Promote: /planning/promote {slug}
-- Switch: /planning/draft {other_slug}
+- Add log: /planning-draft --log "notes"
+- Promote: /planning-promote {slug}
+- Switch: /planning-draft {other_slug}
 ```
 
 ---
@@ -283,7 +283,7 @@ If `--log "text"` is provided:
 Read `specs/drafts/.drafts_index.json` to get `active_draft`.
 If no active draft:
 ```
-No active draft. Use /planning/draft {name} to open one first.
+No active draft. Use /planning-draft {name} to open one first.
 ```
 
 ### Step 2: Append to Session Log

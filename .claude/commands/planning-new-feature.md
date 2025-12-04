@@ -268,7 +268,7 @@ phases:
     time_spent_minutes: 0
 
 blockers: []
-notes: "Feature created via /planning/new-feature command"
+notes: "Feature created via /planning-new-feature command"
 ```
 
 ### Step 6: Update Parent EPIC.md
@@ -299,12 +299,12 @@ Display a success message:
 **Next steps:**
 1. Review the generated IMPLEMENTATION.md
 2. Customize TASKS.md for your specific needs
-3. Start work: /planning/goto-feature {FEATURE_NAME}
+3. Start work: /planning-goto-feature {FEATURE_NAME}
 
 **Quick commands:**
-- Start working: /planning/goto-feature {FEATURE_NAME}
-- View status: /planning/status
-- Update progress: /planning/checkpoint --complete-task "task description"
+- Start working: /planning-goto-feature {FEATURE_NAME}
+- View status: /planning-status
+- Update progress: /planning-checkpoint --complete-task "task description"
 ```
 
 ## Important Notes
