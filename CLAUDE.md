@@ -67,7 +67,7 @@ This project uses a hierarchical planning system (Project → Milestones → Epi
 **Most important command after /clear:**
 
 ```bash
-/planning/resume
+/planning-resume
 ```
 
 This restores your work context in < 10 seconds by loading:
@@ -83,26 +83,26 @@ This restores your work context in < 10 seconds by loading:
 
 ```bash
 # Complete a task
-/planning/checkpoint --complete-task "Implement save_profiling_snapshot()"
+/planning-checkpoint --complete-task "Implement save_profiling_snapshot()"
 
 # Move to next phase
-/planning/checkpoint --next-phase
+/planning-checkpoint --next-phase
 
 # Add blocker
-/planning/checkpoint --add-blocker "Waiting for API contract approval"
+/planning-checkpoint --add-blocker "Waiting for API contract approval"
 
 # Complete feature
-/planning/checkpoint --complete-feature
+/planning-checkpoint --complete-feature
 ```
 
 **View progress:**
 
 ```bash
 # Show current feature status
-/planning/status
+/planning-status
 
 # View project-wide dashboard
-/planning/progress
+/planning-progress
 ```
 
 ### Checkpoint Files
@@ -115,7 +115,7 @@ Every feature has a `.checkpoint` file (YAML) in its directory that tracks:
 
 **Important:**
 - Checkpoint files are gitignored (developer-local state)
-- NEVER edit .checkpoint files manually - always use `/planning/checkpoint` commands
+- NEVER edit .checkpoint files manually - always use `/planning-checkpoint` commands
 - Checkpoint updates are atomic (temp file → rename) to prevent corruption
 
 ### Hierarchical Structure
@@ -402,7 +402,7 @@ This repository has two remotes:
 - Azure DevOps: `git push secondary <branch>`
 - Both: `git push origin <branch> && git push secondary <branch>`
 
-See `.claude/commands/git-push.md` for the full git-push skill with intent mapping.
+See `.claude/skills/git-push.md` for the full git-push skill with intent mapping.
 
 ## Commit Strategy
 
